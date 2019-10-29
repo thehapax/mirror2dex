@@ -11,9 +11,9 @@ logging.basicConfig(
 title = "Bitshares DEX"
 bts_symbol = "OPEN.BTC/BTS"
 output_file = "output_file.csv"
-depth = 1
+depth = 10
 poll_time = 3  # time to wait before polling again
-bar_width = 30
+bar_width = 300
 invert = False
 enable_plot = True
 
