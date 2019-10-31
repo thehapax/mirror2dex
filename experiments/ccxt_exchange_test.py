@@ -95,6 +95,12 @@ def test_rw_ob(l2_ob, file_name):
 
 
 def test_print_orderbooks(symbol, cx):
+    """
+    just print order book data
+    :param symbol: ticker symbol
+    :param cx: CcxtExchange object
+    :return: none
+    """
     log.info(f"Fetch Ticker for {symbol} : {ccxt_ex.fetch_ticker(symbol)}\n")
     log.info(f"Fetching L2 Order Book: {cx.fetch_l2_order_book(symbol)}\n")
     log.info(f"Fetching Order Book: {cx.fetch_order_book(symbol)}\n")
@@ -119,12 +125,19 @@ def get_cex_data(l2, depth: int):
 
     return ask_df.head(depth), bid_df.head(depth)
 
+
+################ fees and trade calc ################################
+
 def get_fees(cx):
+    """ (TODO : incomplete)
+    get trading fees from CEX (if available)
+    if not available, get static fees (currently None) or user designated fees (todo)
+    :param cx: CcxtExchange object
+    :return: fees
+    """
     # may not exist for some exchanges, check method_list
     method_list = list(cx.method_list)
     # log.info(f"Available Methods from ccxt for this exchange: {list(method_list)}")
-
-    # calculate Fees (Todo incomplete)
     fees = None
     if 'fetchTradingFees' in method_list:
         fees = cx.fetch_trading_fees()
@@ -135,6 +148,16 @@ def get_fees(cx):
 
 
 def calc_trade_amt(percent, price_df, asset, free_bal, min_bal):
+    """
+    Calculate amount to use for trading based off of existing balance,
+    minimum balance to retain, price of asset
+    :param percent: percentage of free balance to use
+    :param price_df: available market prices from order book
+    :param asset: name of asset, e.g. BTS
+    :param free_bal: amont of asset available in on-exchange account
+    :param min_bal: minimum percentage of balance to retain for purposes of fees.
+    :return: buy or sell amount and price, or 0,0 for no trade action
+    """
     if asset in free_bal:
         amt_free = free_bal[asset]
         log.info(f"{bid_symbol} : {amt_free}")

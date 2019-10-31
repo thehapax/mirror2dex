@@ -29,6 +29,5 @@ if __name__ == '__main__':
     file_name = 'cex_orderbook.txt'
     write_dict(l2_ob, file_name)
     static_ob = read_dict(file_name)
-#   print(static_ob)
     print(static_ob)
 

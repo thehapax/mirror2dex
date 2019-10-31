@@ -3,6 +3,7 @@ import os
 import configparser
 import ccxt
 import json
+import pandas as pd
 
 """
 The purpose of this class is to help setup ccxt exchange configuration. 
@@ -72,6 +73,34 @@ def get_ccxt_module(config_file):
     log.info(config_sections)
     ccxt_ex = get_exchange(config_sections)
     return ccxt_ex
+
+
+def get_cex_data(l2, depth: int):
+    """
+    sort price and volume data by asks and bids
+    reshape into a dataframe and return
+
+    :param l2: level 2 orderbook from cex exchange
+    :param depth: how many orders deep
+    :return: asks dataframe, bids dataframe
+    """
+    # let ob stand for orderbook, ob_depth is the order book depth we want to map out
+
+    bids = l2['bids']
+    bid_df = pd.DataFrame(bids)
+    bid_df.columns = ['price', 'vol']
+    # bring down to second level precision not millisecond
+    bid_df['timestamp'] = int(l2['timestamp']/1000)
+    bid_df['type'] = 'bids'
+
+    ask = l2['asks']
+    ask_df = pd.DataFrame(ask)
+    ask_df.columns = ['price', 'vol']
+    # bring down to second level precision not millisecond
+    ask_df['timestamp'] = int(l2['timestamp']/1000)
+    ask_df['type'] = 'asks'
+
+    return ask_df.head(depth), bid_df.head(depth)
 
 
 def write_dict(l2_ob, file_name):
