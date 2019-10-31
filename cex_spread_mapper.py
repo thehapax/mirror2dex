@@ -34,4 +34,4 @@ if __name__ == '__main__':
     print("----- dynamic cex df ------")
     print(ob_df)
 
-    plot_sequence(cex_df, title, symbol, invert, bar_width, poll_time)
+    plot_sequence(ob_df, title, symbol, invert, bar_width, poll_time)
