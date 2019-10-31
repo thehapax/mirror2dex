@@ -14,6 +14,7 @@ logging.basicConfig(
 
 if __name__ == '__main__':
 
+"""
     # CEX orderbook
     symbol = 'BTC/USDT'
     depth = 5 # how deep do you want to map your orders
@@ -35,3 +36,4 @@ if __name__ == '__main__':
     print(ob_df)
 
     plot_sequence(ob_df, title, symbol, invert, bar_width, poll_time)
+"""
