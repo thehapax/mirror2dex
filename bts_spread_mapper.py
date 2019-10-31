@@ -5,8 +5,6 @@ import pandas as pd
 import time, os
 import logging
 
-from plot_helper import dynamic_ascii_plot, format_df_ascii
-
 log = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -50,22 +48,3 @@ def get_bts_ob_data(bts_market, depth: int):
     bts_df.sort_values('price', inplace=True, ascending=False)
     return bts_df
 
-
-if __name__ == '__main__':
-
-    # set time to UTC
-    os.environ['TZ'] = 'UTC'
-    time.tzset()
-
-    depth = 5
-    bts_symbol = "OPEN.BTC/USD"
-    bts_market = setup_bitshares_market(bts_symbol)
-    title = "Bitshares DEX Orderbook: " + bts_symbol
-
-    while True:
-        os.system("clear")
-        log.info(time.ctime())
-        bts_df = get_bts_ob_data(bts_market, depth=depth)
-        df = format_df_ascii(bts_df)
-        dynamic_ascii_plot(df, title)
-        time.sleep(2)
