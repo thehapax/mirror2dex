@@ -158,6 +158,21 @@ def get_dynamic_data(ccxt_ex, symbol: str, bts_market, depth: int):
     return cex_df, bts_df
 
 
+def get_charts():
+    plt.ion()  # interactive plot
+    cex_df, bts_df = get_dynamic_data(ccxt_ex, symbol, bts_market, depth)
+    # single_trade_arb
+    plot_exchange_pair(cex_df, bts_df)
+    plt.pause(2)
+    plt.draw()
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
 def get_ordersize():
     """
     place holder for getting proposed order size based on reserves
@@ -250,15 +265,6 @@ def single_trade_arb(cex_df, bts_df):
     cex_spread_df = cex_df[cex_df.index == 0]  # get closest bid/ask
     bts_spread_df = bts_df[bts_df.index == 0]
     calculate_arb_opp(cex_spread_df, bts_spread_df)
-
-
-def get_charts():
-    plt.ion()  # interactive plot
-    cex_df, bts_df = get_dynamic_data(ccxt_ex, symbol, bts_market, depth)
-    # single_trade_arb
-    plot_exchange_pair(cex_df, bts_df)
-    plt.pause(2)
-    plt.draw()
 
 
 if __name__ == '__main__':
