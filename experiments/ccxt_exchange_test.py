@@ -19,7 +19,6 @@ from datetime import datetime, timedelta, timezone
     Cointiger is 0.15% for taker and 0.08% for maker
 """
 
-
 log = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,

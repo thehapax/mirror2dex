@@ -11,7 +11,7 @@ logging.basicConfig(
 config_file = "safe/secrets_test.ini"
 
 
-def get_test_l2ob(symbol):
+def get_l2orderbook(symbol):
     ccxt_ex = get_ccxt_module(config_file)
     log.info(f"Fetch Ticker for {symbol} : {ccxt_ex.fetch_ticker(symbol)}\n")
     print(f"Free Balance:", ccxt_ex.fetch_free_balance())
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     symbol = 'BTC/USDT'
     # symbol = 'BTS/BTC'
     log.info("symbol: {} ".format(symbol))
-    l2_ob = get_test_l2ob(symbol)
+    l2_ob = get_l2orderbook(symbol)
 
     file_name = 'cex_orderbook.txt'
     write_dict(l2_ob, file_name)
