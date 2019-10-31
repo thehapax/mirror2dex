@@ -57,7 +57,7 @@ def plot_orderbook(ob_df, invert: bool, barwidth: float):
         invert_price = ob_df.invert.to_numpy()  # use if needed
         plot_price = invert_price
 
-    plt.bar(price, vol, bwidth, color=ob_df.colors, align='center')
+    plt.bar(plot_price, vol, bwidth, color=ob_df.colors, align='center')
     # use below line if python 3.7, error with python 3.6.8
     # plt.bar(ob_df.price, ob_df.vol, color=ob_df.colors)
 
