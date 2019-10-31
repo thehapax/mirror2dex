@@ -1,3 +1,6 @@
+import sys
+sys.path.append("..")
+
 import logging
 import os
 import configparser
@@ -26,7 +29,7 @@ logging.basicConfig(
 )
 
 # update this to reflect your config file
-config_file = "safe/secrets_test.ini"
+config_file = "../safe/secrets_test.ini"
 
 def get_exchange_config():
     try:
@@ -35,6 +38,7 @@ def get_exchange_config():
         parser.read(os.path.join(config_dir, config_file))
         exch_ids = parser.sections()
         sec = {section_name: dict(parser.items(section_name)) for section_name in exch_ids}
+        log.info(sec)
         return sec
     except Exception as e:
         log.error(e)
@@ -47,12 +51,18 @@ def get_exchange(config_sections):
     exch_name = list(config_sections)[0]
     apikey = config_sections[exch_name]['api_key']
     secret = config_sections[exch_name]['secret']
+    strategy = config_sections[exch_name]['strategy']
+    passwd = config_sections[exch_name]['fund-password']
     log.info(f"API Key:  {apikey}")
+    log.info(f"secret:  {secret}")
+    log.info(f"strategy:  {strategy}")
+    log.info(f"fund-passwd:  {passwd}")
 
     # coin tiger requires an API key, even if only for ticker data
     ccxt_ex = getattr(ccxt, exch_name)({
         "apiKey": apikey,
         "secret": secret,
+        'password': passwd,
         'timeout': 30000,
         'enableRateLimit': True,
         'verbose': False,
