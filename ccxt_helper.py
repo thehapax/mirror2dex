@@ -37,6 +37,18 @@ def get_exchange_config(config_filename):
         pass
 
 
+def get_strategy(config_sections):
+    """
+    return the name of the strategy for a given exchange configuration
+    :param config_sections:
+    :return:
+    """
+    exch_name = list(config_sections)[0]
+    strategy = config_sections[exch_name]['strategy']
+    log.info(f"strategy:  {strategy}")
+    return strategy
+
+
 def get_exchange(config_sections):
     # need to fix below in order to check for for
     # acceptable exchanges and parameters
@@ -49,17 +61,23 @@ def get_exchange(config_sections):
     exch_name = list(config_sections)[0]
     apikey = config_sections[exch_name]['api_key']
     secret = config_sections[exch_name]['secret']
+    passwd = config_sections[exch_name]['fund-password']
+
     log.info(f"API Key:  {apikey}")
     log.info(f"SECRET: {secret})")
+    log.info(f"fund-passwd:  {passwd}")
 
     # coin tiger requires an API key, even if only for ticker data
     # other exchanges do not need the API key unless trading.
     ccxt_ex = getattr(ccxt, exch_name)({
         "apiKey": apikey,
         "secret": secret,
+        'password': passwd,
         'timeout': 30000,
         'enableRateLimit': True,
         'verbose': False,
+        'precision': {'price': 8,
+                      'amount': 8, }
     })
     return ccxt_ex
 
