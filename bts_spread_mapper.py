@@ -12,6 +12,9 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s %(message)s'
 )
 
+"""
+Setup config file and methods to get orderbook from bitshares exchange 
+"""
 
 # temporary for testing without dexbot only.
 def get_bts_config(bts_config_file):
@@ -22,6 +25,7 @@ def get_bts_config(bts_config_file):
         info = parser.sections()
         log.info(info)
         config_sections = {section_name: dict(parser.items(section_name)) for section_name in info}
+
         exch_name = list(config_sections)[0]
         passwd = config_sections[exch_name]['password']
         acct = config_sections[exch_name]['account']
@@ -52,6 +56,13 @@ def setup_bitshares_market(bts_symbol):
 
 
 def get_bts_orderbook_df(ob, type):
+    """
+    filter bts order book by ask, bids
+    return as a dataframe
+    :param ob: orderbook as dataframe
+    :param type: type of order 'ask' or 'bid'
+    :return: dataframe
+    """
     price_vol = list()
     for i in range(len(ob[type])):
         price = ob[type][i]['price']
@@ -66,6 +77,12 @@ def get_bts_orderbook_df(ob, type):
 
 
 def get_bts_ob_data(bts_market, depth: int):
+    """
+    get bts orderbook and label asks and bids
+    :param bts_market: name of bts market
+    :param depth: depth of orderbook
+    :return: order book filtered and labeled with asks/bids
+    """
     # get bitshares order book for current market
     bts_orderbook = bts_market.orderbook(limit=depth)
     ask_df = get_bts_orderbook_df(bts_orderbook, 'asks')

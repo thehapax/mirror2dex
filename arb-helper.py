@@ -8,9 +8,17 @@ logging.basicConfig(
 
 
 def single_trade_arb(cex_df, bts_df):
+    """
+    calculat if profitable simple arb is possible based on cex/dex df
+    :param cex_df: centralized exchange order book
+    :param bts_df: bitshares exchange order book
+    :return:
+    """
+    # get closest bid/ask
     cex_spread_df = cex_df[cex_df.index == 0]  # get closest bid/ask
     bts_spread_df = bts_df[bts_df.index == 0]
     calculate_arb_opp(cex_spread_df, bts_spread_df)
+
 
 
 def get_ordersize():
@@ -23,6 +31,12 @@ def get_ordersize():
 
 
 def calculate_arb_opp(cex_df, bts_df):  # calculate arbitrage opportunity
+    """
+    Calculate arb opportunity based on cex and dex orderbooks.
+    :param cex_df:
+    :param bts_df:
+    :return:
+    """
     log.info("Calculate Arbitrage Opportunity")
     # look at lowest ask and highest bid
     # if dex ask price is > cex ask,  take cex ask and sell on dex. (account for fees)
@@ -71,6 +85,9 @@ def calculate_arb_opp(cex_df, bts_df):  # calculate arbitrage opportunity
 def get_cex_mirror(asks_df, bids_df, asks_bal, bids_bal):
     """
     todo
+    get scaled mirror of cex in dex dataframe
+    uses entire balance give an as arugments here.
+    percentage of balance must be specified outside of this method
     :param cex_df:
     :param bts_df:
     :return:
