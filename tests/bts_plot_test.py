@@ -1,3 +1,6 @@
+import sys
+sys.path.append("..")
+
 from bts_spread_mapper import setup_bitshares_market, get_bts_ob_data
 from plot_helper import plot_sequence
 import logging

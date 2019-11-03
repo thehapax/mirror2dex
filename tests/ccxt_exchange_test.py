@@ -51,11 +51,9 @@ def get_exchange(config_sections):
     exch_name = list(config_sections)[0]
     apikey = config_sections[exch_name]['api_key']
     secret = config_sections[exch_name]['secret']
-    strategy = config_sections[exch_name]['strategy']
     passwd = config_sections[exch_name]['fund-password']
     log.info(f"API Key:  {apikey}")
     log.info(f"secret:  {secret}")
-    log.info(f"strategy:  {strategy}")
     log.info(f"fund-passwd:  {passwd}")
 
     # coin tiger requires an API key, even if only for ticker data
@@ -170,7 +168,7 @@ def calc_trade_amt(percent, price_df, asset, free_bal, min_bal):
     """
     if asset in free_bal:
         amt_free = free_bal[asset]
-        log.info(f"{bid_symbol} : {amt_free}")
+        log.info(f"Inside Calc_trade_amt: {asset} : Free: {amt_free}")
         if amt_free > 0:
             amt_avail = amt_free - (amt_free * min_bal)
             buy_amt = amt_avail * percent
@@ -189,12 +187,15 @@ if __name__ == '__main__':
     symbol = 'BTS/ETH'
     bitshares_symbol = 'BTS/OPEN.ETH'
 
-    bid_symbol = symbol.split('/')[0]
-    ask_symbol = symbol.split('/')[1]
-    log.info(f'Price({ask_symbol}), Vol is Amount ({bid_symbol})  on cointiger exchange')
+    ask_symbol = symbol.split('/')[0]
+    bid_symbol = symbol.split('/')[1]
+    log.info(f'CEX Price: Ask Symbol ({ask_symbol}), Vol is Amount: Bid Symbol: ({bid_symbol})')
 
     config_sections = get_exchange_config()
-    log.info(config_sections)
+    ct = config_sections['cointiger']
+    log.info('\n')
+    log.info(f'Config sections: {ct}')
+
     ccxt_ex = get_exchange(config_sections)
     cx = CcxtExchange(exchange=ccxt_ex)
 
@@ -203,6 +204,8 @@ if __name__ == '__main__':
 
     l2_ob = ccxt_ex.fetch_l2_order_book(symbol)
     asks, bids = get_cex_data(l2_ob, depth=2)
+#    pd.set_option('float_format', '{:f}'.format)
+    pd.options.display.float_format = "{:.8f}".format
     log.info(f'Asks:\n {asks}')
     log.info(f'Bids:\n {bids}')
 
@@ -215,28 +218,29 @@ if __name__ == '__main__':
     min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
 
     # test buy 5% of free balance
-    buy_amt, buy_price = calc_trade_amt(0.05, asks, bid_symbol, free_bal, min_bal_percentage)
+    buy_amt, buy_price = calc_trade_amt(0.20, asks, bid_symbol, free_bal, min_bal_percentage)
     log.info(f"Buy Amount: {buy_amt}, Buy Price: {buy_price}")
 
+    log.info ("################################")
     log.info(f"Creating Market Buy Order: {bid_symbol}, Amt: {buy_amt}, Price:{buy_price}")
     # uncomment to execute test buy order
-    # if buy_amt > 0:
-    #    buy_id = cx.create_buy_order(symbol, buy_amt, buy_price)
-    #    fetched_order = cx.fetch_order(buy_id)
-    #    log.info(f'fetched buy order: {fetched_order}')
+#    if buy_amt > 0:
+#        buy_id = cx.create_buy_order(symbol, buy_amt, buy_price)
+#        fetched_order = cx.fetch_order(buy_id)
+#        log.info(f'fetched buy order: {fetched_order}')
 
     # test sell 5% of free balance
-    sell_amt, sell_price = calc_trade_amt(0.05, bids, ask_symbol, free_bal, min_bal_percentage)
+    sell_amt, sell_price = calc_trade_amt(0.20, bids, ask_symbol, free_bal, min_bal_percentage)
     log.info(f"Creating Market Sell Order: {ask_symbol}, Amt: {sell_amt}, Price:{sell_price}")
-    # if sell_amt > 0:
-    #    sell_id = cx.create_sell_order(symbol, sell_amt, sell_price)
-    #    forder = cx.fetch_order(buy_id)
-    #    log.info(f'fetched sell order: {forder}')
+    if sell_amt > 0:
+        sell_id = cx.create_sell_order(symbol, sell_amt, sell_price)
+        forder = cx.fetch_order(buy_id)
+        log.info(f'fetched sell order: {forder}')
 
     # synthetic test for 'ETH' asset, amt = 0.1, percent = 0.05
     sell_amt = 0.1* 0.05
     sell_price = bids['price'][0]
-    log.info(f'sythetic: {ask_symbol}, sell amt {sell_amt}, sell_price {sell_price}')
+    log.info(f'synthetic (zero bal): {ask_symbol}, sell amt {sell_amt}, sell_price {sell_price}')
     # end synthetic
 
     my_trades = cx.fetch_my_trades(symbol)
