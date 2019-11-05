@@ -31,6 +31,8 @@ logging.basicConfig(
 # update this to reflect your config file
 config_file = "../safe/secrets_test.ini"
 
+# cointiger example sdk https://github.com/CoinTiger/CoinTiger_SDK_Python
+
 def get_exchange_config():
     try:
         config_dir = os.path.dirname(__file__)
@@ -60,7 +62,7 @@ def get_exchange(config_sections):
     ccxt_ex = getattr(ccxt, exch_name)({
         "apiKey": apikey,
         "secret": secret,
-        'password': passwd,
+        'capital_password': passwd, # cointiger only
         'timeout': 30000,
         'enableRateLimit': True,
         'verbose': False,
@@ -159,6 +161,8 @@ def calc_trade_amt(percent, price_df, asset, free_bal, min_bal):
     """
     Calculate amount to use for trading based off of existing balance,
     minimum balance to retain, price of asset
+    This calculation will take the highest bid and sell your asset at market
+    with the intention to clear immediately
     :param percent: percentage of free balance to use
     :param price_df: available market prices from order book
     :param asset: name of asset, e.g. BTS
@@ -182,8 +186,8 @@ def calc_trade_amt(percent, price_df, asset, free_bal, min_bal):
 
 if __name__ == '__main__':
 
-    #symbol = 'BTC/USDT'
     #symbol = 'BTS/BTC'
+    #bitshares_symbol = 'BTS/OPEN.BTC'
     symbol = 'BTS/ETH'
     bitshares_symbol = 'BTS/OPEN.ETH'
 
@@ -218,7 +222,7 @@ if __name__ == '__main__':
     min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
 
     # test buy 5% of free balance
-    buy_amt, buy_price = calc_trade_amt(0.20, asks, bid_symbol, free_bal, min_bal_percentage)
+    buy_amt, buy_price = calc_trade_amt(0.50, asks, bid_symbol, free_bal, min_bal_percentage)
     log.info(f"Buy Amount: {buy_amt}, Buy Price: {buy_price}")
 
     log.info ("################################")
@@ -228,19 +232,21 @@ if __name__ == '__main__':
 #        buy_id = cx.create_buy_order(symbol, buy_amt, buy_price)
 #        fetched_order = cx.fetch_order(buy_id)
 #        log.info(f'fetched buy order: {fetched_order}')
-
     # test sell 5% of free balance
-    sell_amt, sell_price = calc_trade_amt(0.20, bids, ask_symbol, free_bal, min_bal_percentage)
+    sell_amt, sell_price = calc_trade_amt(0.6, bids, ask_symbol, free_bal, min_bal_percentage)
     log.info(f"Creating Market Sell Order: {ask_symbol}, Amt: {sell_amt}, Price:{sell_price}")
     if sell_amt > 0:
         sell_id = cx.create_sell_order(symbol, sell_amt, sell_price)
         forder = cx.fetch_order(buy_id)
         log.info(f'fetched sell order: {forder}')
 
+# Note: Cointiger error:  createOrder requires exchange.password to be
+    # set to user trading password(not login passwordnot )')
+
     # synthetic test for 'ETH' asset, amt = 0.1, percent = 0.05
-    sell_amt = 0.1* 0.05
-    sell_price = bids['price'][0]
-    log.info(f'synthetic (zero bal): {ask_symbol}, sell amt {sell_amt}, sell_price {sell_price}')
+#    sell_amt = 0.1* 0.05
+#    sell_price = bids['price'][0]
+#    log.info(f'synthetic (zero bal): {ask_symbol}, sell amt {sell_amt}, sell_price {sell_price}')
     # end synthetic
 
     my_trades = cx.fetch_my_trades(symbol)
