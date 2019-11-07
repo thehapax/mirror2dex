@@ -1,6 +1,6 @@
 from bts_spread_mapper import setup_bitshares_market, get_bts_ob_data, get_bts_config
 from ccxt_helper import get_ccxt_module, get_cex_data
-from plot_helper import dynamic_ascii_plot, format_df_ascii
+from ascii_plot_helper import dynamic_ascii_plot, format_df_ascii
 
 import pandas as pd
 import time, os

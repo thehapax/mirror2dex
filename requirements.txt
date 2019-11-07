@@ -4,3 +4,6 @@ pandas==0.24.2
 bitshares==0.3.2
 ascii_graph==1.5.1
 scikit_learn==0.21.3
+cointiger-sdk==0.1.2  
+websocket-client==0.56.0
+requests==2.22.0
