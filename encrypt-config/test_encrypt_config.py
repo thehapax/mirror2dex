@@ -39,26 +39,31 @@ def get_by_strategy_name(parser, name):
         secret = parser.get(section_name, 'secret')
         exchange_name = parser.get(section_name, 'exchange-name')
 
-        log.info( f"strategy-name: {section_name}, "
-                  f"exchange: {exchange_name}, "
-                  f"api_key: {api_key}, "
-                  f"secret: {secret}, "
-                  f"strategy: {strategy}")
-
+        return strategy, api_key, secret, exchange_name
     except NoOptionError as e:
         log.error(e)
 
 
 if __name__ == "__main__":
     sname = "ctiger-mirror"
-
     config_file = "secrets_test2.ini"
-    input_passwd = getpass("password: ")
-    test_encrypt(input_passwd, config_file)
-    plain_text = test_decrypt(input_passwd, "enc_"+config_file)
 
-    parser = get_exchange_config(plain_text)
-    get_by_strategy_name(parser, sname)
+#    input_passwd = getpass("password: ")
+#    test_encrypt(input_passwd, config_file)
+#    plain_text = test_decrypt(input_passwd, "enc_"+config_file)
 
+
+    with open(config_file, 'r') as enc_file:
+        plain_text = enc_file.read()
+        print(plain_text)
+        parser = get_exchange_config(plain_text)
+        strategy, api_key, secret, exchange_name =  get_by_strategy_name(parser, sname)
+        log.info( f"strategy-name: {sname}, "
+                  f"exchange: {exchange_name}, "
+                  f"api_key: {api_key}, "
+                  f"secret: {secret}, "
+                  f"strategy: {strategy}")
+
+        
 
 
