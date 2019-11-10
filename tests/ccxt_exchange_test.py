@@ -12,6 +12,8 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 
 """
+    Todo: This version neeeds to be completed and swapped out with the dexbot version
+
     Temporary informal unit test for ccxt exchange
     
     Note: 
