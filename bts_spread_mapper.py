@@ -4,7 +4,7 @@ from bitshares.market import Market
 import pandas as pd
 import time, os
 import logging
-import configparser
+from configparser import ConfigParser, NoOptionError
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -20,21 +20,22 @@ Setup config file and methods to get orderbook from bitshares exchange
 def get_bts_config(bts_config_file):
     try:
         config_dir = os.path.dirname(__file__)
-        parser = configparser.ConfigParser()
+        parser = ConfigParser()
         parser.read(os.path.join(config_dir, bts_config_file))
         info = parser.sections()
         log.info(info)
         config_sections = {section_name: dict(parser.items(section_name)) for section_name in info}
+        exch_name = 'bitshares' # todo modify so that any exchange can work
 
-        exch_name = list(config_sections)[0]
-        passwd = config_sections[exch_name]['password']
-        acct = config_sections[exch_name]['account']
-        log.info(f'passwd = {passwd}')
-        log.info(f'account = {acct}')
-        return passwd, acct
-    except (FileNotFoundError, PermissionError, OSError) as e:
+        if exch_name in list(config_sections):
+            passwd = config_sections[exch_name]['password']
+            acct = config_sections[exch_name]['account']
+            log.info(f'passwd = {passwd}')
+            log.info(f'account = {acct}')
+            return passwd, acct
+    except (FileNotFoundError, PermissionError, OSError, NoOptionError) as e:
         log.error(e)
-        pass
+        return None, None
 
 
 def setup_bitshares_market(bts_symbol):

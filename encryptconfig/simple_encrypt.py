@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 
-import logging, os
+import logging
 import binascii
 import base64
 
@@ -11,6 +11,10 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s'
 )
+
+"""
+Use this file to encrypt and decrypt files using simple encryption. 
+"""
 
 def gen_key(passwd):
     try:
@@ -68,3 +72,5 @@ def test_decrypt(input_passwd, config_filename):
         if plain_text is None:
             log.info("Plain text unable to decrypt, error")
     return plain_text
+
+

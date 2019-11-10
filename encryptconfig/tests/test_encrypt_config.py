@@ -1,8 +1,6 @@
 import logging
 from getpass import getpass
-from configparser import ConfigParser, NoOptionError
 from simple_encrypt import test_encrypt, test_decrypt
-import ccxt
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -13,7 +11,6 @@ logging.basicConfig(
 # only accept API keys for these ccxt exchanges, cross check here.
 EXCHANGES = ['cointiger', 'binance', 'bitfinex']
 STRATEGIES =['simple', 'ccxt-mirror', 'triangular']
-
 
 def get_exchange_config(content):
     try:
@@ -48,9 +45,9 @@ if __name__ == "__main__":
     sname = "ctiger-mirror"
     config_file = "secrets_test2.ini"
 
-#    input_passwd = getpass("password: ")
-#    test_encrypt(input_passwd, config_file)
-#    plain_text = test_decrypt(input_passwd, "enc_"+config_file)
+    input_passwd = getpass("password: ")
+    test_encrypt(input_passwd, config_file)
+    plain_text = test_decrypt(input_passwd, "enc_"+config_file)
 
 
     with open(config_file, 'r') as enc_file:
