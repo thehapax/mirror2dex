@@ -45,11 +45,12 @@ if __name__ == "__main__":
     sname = "ctiger-mirror"
     config_file = "secrets_test2.ini"
 
+    # test encrypt and decrypt file with password
     input_passwd = getpass("password: ")
     test_encrypt(input_passwd, config_file)
     plain_text = test_decrypt(input_passwd, "enc_"+config_file)
 
-
+    # just print config file using ConfigParser
     with open(config_file, 'r') as enc_file:
         plain_text = enc_file.read()
         print(plain_text)
