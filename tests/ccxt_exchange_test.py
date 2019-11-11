@@ -2,11 +2,8 @@ import sys
 sys.path.append("..")
 
 import logging
-import os
-import configparser
-import ccxt
-import json
 from ccxt_exchange import CcxtExchange
+from ccxt_helper import get_exchange, get_exchange_config
 import pandas as pd
 
 from datetime import datetime, timedelta, timezone
@@ -30,66 +27,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s %(message)s'
 )
 
-# update this to reflect your config file
-config_file = "../safe/secrets_test.ini"
-
 # cointiger example sdk https://github.com/CoinTiger/CoinTiger_SDK_Python
-
-def get_exchange_config():
-    try:
-        config_dir = os.path.dirname(__file__)
-        parser = configparser.ConfigParser()
-        parser.read(os.path.join(config_dir, config_file))
-        exch_ids = parser.sections()
-        sec = {section_name: dict(parser.items(section_name)) for section_name in exch_ids}
-        log.info(sec)
-        return sec
-    except Exception as e:
-        log.error(e)
-        pass
-
-
-def get_exchange(config_sections):
-    # need to fix below in order to check for for acceptable exchanges and parameters
-    # for now, get 0th exchange
-    exch_name = list(config_sections)[0]
-    apikey = config_sections[exch_name]['api_key']
-    secret = config_sections[exch_name]['secret']
-    passwd = config_sections[exch_name]['fund-password']
-    log.info(f"API Key:  {apikey}")
-    log.info(f"secret:  {secret}")
-    log.info(f"fund-passwd:  {passwd}")
-
-    # coin tiger requires an API key, even if only for ticker data
-    ccxt_ex = getattr(ccxt, exch_name)({
-        "apiKey": apikey,
-        "secret": secret,
-        'capital_password': passwd, # cointiger only
-        'timeout': 30000,
-        'enableRateLimit': True,
-        'verbose': False,
-        'precision': {'price':8,
-                      'amount':8,}
-    })
-    return ccxt_ex
-
-
-def get_ccxt_module():
-    config_sections = get_exchange_config()
-    ccxt_ex = get_exchange(config_sections)
-    return ccxt_ex
-
-
-def write_dict(l2_ob, file_name):
-    with open(file_name, 'w') as f:
-        s = f.write(json.dumps(l2_ob))
-
-
-def read_dict(file_name):
-    with open(file_name, 'r') as f:
-        static_ob = json.loads(f.read())
-    return static_ob
-
 
 def test_rw_ob(l2_ob, file_name):
     """
@@ -197,7 +135,10 @@ if __name__ == '__main__':
     bid_symbol = symbol.split('/')[1]
     log.info(f'CEX Price: Ask Symbol ({ask_symbol}), Vol is Amount: Bid Symbol: ({bid_symbol})')
 
-    config_sections = get_exchange_config()
+    # update this to reflect your config file
+    config_file = "safe/secrets_test.ini"
+
+    config_sections = get_exchange_config(config_file)
     ct = config_sections['cointiger']
     log.info('\n')
     log.info(f'Config sections: {ct}')
