@@ -2,7 +2,6 @@ import logging
 import os
 import configparser
 import ccxt
-import json
 import pandas as pd
 
 """
@@ -28,8 +27,8 @@ def get_exchange_config(config_filename):
         parser = configparser.ConfigParser()
         parser.read(os.path.join(config_dir, config_filename))
         exch_ids = parser.sections()
-        log.info("exchange ids")
-        log.info(exch_ids)
+        log.info(f'config file: {config_dir}, {config_filename}')
+        log.info(f"exchange ids {exch_ids}")
         sec = {section_name: dict(parser.items(section_name)) for section_name in exch_ids}
         return sec
     except (FileNotFoundError, PermissionError, OSError) as e:
@@ -121,25 +120,5 @@ def get_cex_data(l2, depth: int):
     return ask_df.head(depth), bid_df.head(depth)
 
 
-def write_dict(l2_ob, file_name):
-    """
-    write order book to file.
-    :param l2_ob:  level 2 order book
-    :param file_name:  filanem
-    :return: none
-    """
-    with open(file_name, 'w') as f:
-        s = f.write(json.dumps(l2_ob))
-
-
-def read_dict(file_name):
-    """
-    read order book from file
-    :param file_name: filename
-    :return: static orderbook from file read
-    """
-    with open(file_name, 'r') as f:
-        static_ob = json.loads(f.read())
-    return static_ob
 
 
