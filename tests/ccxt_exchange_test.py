@@ -29,20 +29,6 @@ logging.basicConfig(
 
 # cointiger example sdk https://github.com/CoinTiger/CoinTiger_SDK_Python
 
-def test_rw_ob(l2_ob, file_name):
-    """
-    Test Reading and writing orderbook to file
-    :param l2_ob:
-    :return:
-    """
-    # write order book to file.
-    # read order book from file
-    if file_name is None:
-        file_name = 'cex_ob.txt'
-    write_dict(l2_ob, file_name)
-    static_ob = read_dict(file_name)
-    log.info(static_ob)
-
 
 def test_print_orderbooks(symbol, cx):
     """
@@ -58,7 +44,7 @@ def test_print_orderbooks(symbol, cx):
 
 def get_cex_data(l2, depth: int):
     # let ob stand for orderbook, ob_depth is the order book depth we want to map out
-
+    # todo move this method to ccxt_helper
     bids = l2['bids']
     bid_df = pd.DataFrame(bids)
     bid_df.columns = ['price', 'vol']
@@ -77,6 +63,7 @@ def get_cex_data(l2, depth: int):
 
 
 ################ fees and trade calc ################################
+# to do move these methods to simple arb strategy
 
 def get_fees(cx):
     """ (TODO : incomplete)
