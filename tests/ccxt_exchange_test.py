@@ -144,6 +144,12 @@ def get_timedelta(time_frame):
 
 
 def setup_cointiger(config_file):
+    """
+    configure cointiger exchange with config file
+    set api_key and secret value in cointiger exchage
+    :param config_file: config file name
+    :return: api_key from file
+    """
     api_key = get_cointiger_module(config_file)
     return api_key
 
@@ -169,12 +175,21 @@ def ct_cancel_order(api_key, order_id, symbol):
             log.info(f"SUCCESS: {cancel_dict}")
             order_id = cancel_dict['data']['success'][0]
 
-        return order_id
+        return order_id, code_resp
     except Exception as e:
         log.error(e)
 
 
 def ct_place_order(api_key, price, volume, symbol, side_type):
+    """
+    Place order on cointiger exchange
+    :param api_key: api key
+    :param price: price to sell
+    :param volume: volume of asset to sell
+    :param symbol: symbol
+    :param side_type: 'buy' or 'sell' for transaction
+    :return: order_id, code_response if success or not (0 is succcess, 1 or 2 is error)
+    """
     side = const.SideType.SELL.value
     if side_type is 'buy':
         side = const.SideType.BUY.value
@@ -188,30 +203,29 @@ def ct_place_order(api_key, price, volume, symbol, side_type):
         'type': const.OrderType.LimitOrder.value,
         'time': int(time.time())
     }
-    log.info(f'order data: {order_data}')
-    log.info("COINTIGER: get signature from order data")
-    log.info(cointiger.get_sign(order_data))
+    try:
+        log.info(f'order data: {order_data}')
+        log.info("COINTIGER: get signature from order data")
+        log.info(cointiger.get_sign(order_data))
+        log.info("COINTIGER PLACE ORDER")
+        ct_response = cointiger.order(dict(order_data, **{'sign': cointiger.get_sign(order_data)}))
+        log.info(ct_response)
 
-    log.info("COINTIGER PLACE ORDER")
-    ct_response = cointiger.order(dict(order_data, **{'sign': cointiger.get_sign(order_data)}))
-    log.info(ct_response)
+        order_id = None
+        ct_dict = json.loads(ct_response)
+        code_resp = ct_dict['code']
+        log.info(f'Code response from COINTIGER {code_resp}')
 
-    order_id = None
-
-    ct_dict = json.loads(ct_response)
-    code_resp = ct_dict['code']
-    log.info(f'Code from COINTIGER {code_resp}')
-
-    if code_resp == '0':
-        order_id = ct_dict['data']['order_id'] # get zeroth order id
-        log.info(f"Order ID FROM COINTIGER ORDER: {order_id}")
-    return order_id
+        if code_resp == '0':
+            order_id = ct_dict['data']['order_id'] # get zeroth order id
+            log.info(f"Order ID FROM COINTIGER ORDER: {order_id}")
+        return order_id, code_resp
+    except Exception as e:
+        log.error(e)
 
 
 if __name__ == '__main__':
 
-    #symbol = 'BTS/BTC'
-    #bitshares_symbol = 'BTS/OPEN.BTC'
     symbol = 'BTS/ETH'
     bitshares_symbol = 'BTS/OPEN.ETH'
     ct_symbol = symbol.replace('/', '').lower()
@@ -220,15 +234,13 @@ if __name__ == '__main__':
     bid_symbol = symbol.split('/')[1]
     log.info(f'CEX Price: Ask Symbol ({ask_symbol}), Vol is Amount: Bid Symbol: ({bid_symbol})')
 
-    min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
-
     # update this to reflect your config file
     config_file = "safe/secrets_test.ini"
     api_key = setup_cointiger(config_file)
     ccxt_ex = get_ccxt_module(config_file, 'cointiger')
     cx = CcxtExchange(exchange=ccxt_ex)
-
-    asks, bids = display_orderbook(2, symbol, cx)
+    depth = 2
+    asks, bids = display_orderbook(depth, symbol, cx)
 
     """
     test buy and sell on cex exchanges
@@ -238,22 +250,26 @@ if __name__ == '__main__':
     log.info ("################################")
 
     # test sell 5% of free balance
-    sell_amt, sell_price = calc_trade_amt(0.6, bids, ask_symbol, free_bal, min_bal_percentage)
+
+    percent = 0.6
+    min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
+    sell_amt, sell_price = calc_trade_amt(percent, bids, ask_symbol, free_bal, min_bal_percentage)
     log.info(f"Preparing Market Sell Order: {ask_symbol}, Amt: {sell_amt}, Price:{sell_price}")
 
-    price = 0.00016
-    volume = 320
+    sell_price = 0.00016
+    sell_amt = 320
     side_type = 'sell'
 
-    # integrate ct_place_order and ct_cancel_order methods into cointiger_exchange class,
+    # todo: integrate ct_place_order and ct_cancel_order methods into cointiger_exchange class,
     # which inherits CcxtExchange and overrides buy and sell orders as cancel orders
 
-    order_id = ct_place_order(api_key, price, volume, ct_symbol, side_type)
+    order_id, code_resp = ct_place_order(api_key, sell_price, sell_amt, ct_symbol, side_type)
     log.info(f"printing Order_ID: {order_id}")
     cancel_id = ct_cancel_order(api_key, order_id, ct_symbol)
 
     # todo
-    time_frame = 2880 # 2 days ago - 60m*48 # how far back should we look in time. 10 minutes
+    time_frame = 2880   # 2 days ago - 60m*48
+    # how far back should we look in time. 10 minutes
     since_ts = get_timedelta(time_frame)
 
     log.info("################################")

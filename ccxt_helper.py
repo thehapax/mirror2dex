@@ -22,8 +22,10 @@ def get_exchange_config(config_filename, exch_name):
     """
     use this method for testing, not in dexbot production
     get exchange config based on filename
-    :param config_file:
-    :return:
+
+    :param config_filename:  name of config file
+    :param exch_name:  exchange name
+    :return:  dict that contains config file section
     """
     try:
         config_dir = os.path.dirname(__file__)
@@ -41,13 +43,11 @@ def get_exchange_config(config_filename, exch_name):
         pass
 
 def get_exchange_keys(config_sections, exch_name):
-    # need to fix below in order to check for for
-    # acceptable exchanges and parameters
-    # for now, get 0th exchange
     """
-    get ccxt exchange based on configuration file sections
-    :param config_sections: api keys and secrets from encrypted config file.
-    :return:
+    Get exchange keys from config_sections
+    :param config_sections: config section from parser
+    :param exch_name: name of exchange
+    :return: apikey and secret
     """
     if exch_name is not list(config_sections)[0]:
         return None, None, None
@@ -68,7 +68,7 @@ def get_cointiger_module(config_file):
     cointiger sdk at https://github.com/CoinTiger/CoinTiger_SDK_Python
     :param config_file:
     :param exch_name: cointiger
-    :return: api_key o
+    :return: api_key
     """
     exch_name = 'cointiger'
     config_sections = get_exchange_config(config_file, exch_name)
@@ -82,7 +82,7 @@ def get_cointiger_module(config_file):
 
 def get_ccxt_module(config_file, exch_name):
     """
-    instantiate a ccxt module from the config
+    instantiate a ccxt module from the config file name and exchange name
     :return: ccxt module
     """
     config_sections = get_exchange_config(config_file, exch_name)
