@@ -54,15 +54,13 @@ def get_exchange_keys(config_sections, exch_name):
 
     apikey = config_sections[exch_name]['api_key']
     secret = config_sections[exch_name]['secret']
-    passwd = config_sections[exch_name]['fund-password']
     strategy = config_sections[exch_name]['strategy']
 
     log.info(f"API Key:  {apikey}")
     log.info(f"SECRET: {secret})")
-    log.info(f"fund-passwd:  {passwd}")
-    log.info(f"API Key:  {strategy}")
+    log.info(f"strategy:  {strategy}")
 
-    return apikey, secret, passwd
+    return apikey, secret
 
 def get_cointiger_module(config_file):
     """
@@ -75,7 +73,7 @@ def get_cointiger_module(config_file):
     exch_name = 'cointiger'
     config_sections = get_exchange_config(config_file, exch_name)
     log.info(config_sections)
-    api_key, secret, passwd = get_exchange_keys(config_sections, exch_name)
+    api_key, secret = get_exchange_keys(config_sections, exch_name)
 
     setkey = cointiger.set_key_and_secret(api_key, secret)
     log.info(f'setting api key, secret : {setkey}')
@@ -90,14 +88,13 @@ def get_ccxt_module(config_file, exch_name):
     config_sections = get_exchange_config(config_file, exch_name)
     log.info(config_sections)
 
-    apikey, secret, passwd = get_exchange_keys(config_sections, exch_name)
+    apikey, secret = get_exchange_keys(config_sections, exch_name)
 
     # coin tiger requires an API key, even if only for ticker data
     # other exchanges do not need the API key unless trading.
     ccxt_ex = getattr(ccxt, exch_name)({
         "apiKey": apikey,
         "secret": secret,
-        'password': passwd,
         'timeout': 30000,
         'enableRateLimit': True,
         'verbose': False,

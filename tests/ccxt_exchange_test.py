@@ -10,6 +10,7 @@ from cointiger_sdk import cointiger
 from cointiger_sdk import const
 from datetime import timedelta, timezone, datetime
 import time
+import json
 
 
 """
@@ -158,14 +159,16 @@ def ct_cancel_order(api_key, order_id, symbol):
 
     try:
         log.info("COINTIGER BATCH CANCEL")
-        cancel_resp = cointiger.batch_cancel(dict(cancel_data, **{'sign': cointiger.get_sign(cancel_data)}))
-        log.info(cancel_resp)
+        cancel_response = cointiger.batch_cancel(dict(cancel_data, **{'sign': cointiger.get_sign(cancel_data)}))
+        log.info(cancel_response)
 
         order_id = None
-        code_resp = cancel_resp['code']
+        cancel_dict = json.loads(cancel_response)
+        code_resp = cancel_dict['code']
         if code_resp == '0':
-            log.info(f"SUCCESS: {cancel_resp}")
-            order_id = cancel_resp['data']['success'][0]
+            log.info(f"SUCCESS: {cancel_dict}")
+            order_id = cancel_dict['data']['success'][0]
+
         return order_id
     except Exception as e:
         log.error(e)
@@ -190,15 +193,17 @@ def ct_place_order(api_key, price, volume, symbol, side_type):
     log.info(cointiger.get_sign(order_data))
 
     log.info("COINTIGER PLACE ORDER")
-    ct_resp = cointiger.order(dict(order_data, **{'sign': cointiger.get_sign(order_data)}))
-    log.info(ct_resp)
+    ct_response = cointiger.order(dict(order_data, **{'sign': cointiger.get_sign(order_data)}))
+    log.info(ct_response)
 
     order_id = None
-    code_resp = ct_resp['code']
+
+    ct_dict = json.loads(ct_response)
+    code_resp = ct_dict['code']
     log.info(f'Code from COINTIGER {code_resp}')
 
-    if ct_resp['code'] == '0':
-        order_id = ct_resp['data']['order_id'][0] # get zeroth order id
+    if code_resp == '0':
+        order_id = ct_dict['data']['order_id'] # get zeroth order id
         log.info(f"Order ID FROM COINTIGER ORDER: {order_id}")
     return order_id
 
@@ -240,13 +245,12 @@ if __name__ == '__main__':
     volume = 320
     side_type = 'sell'
 
-#    order_id = ct_place_order(api_key, price, volume, ct_symbol, side_type)
+    # integrate ct_place_order and ct_cancel_order methods into cointiger_exchange class,
+    # which inherits CcxtExchange and overrides buy and sell orders as cancel orders
 
-    order_id = 127671510
+    order_id = ct_place_order(api_key, price, volume, ct_symbol, side_type)
     log.info(f"printing Order_ID: {order_id}")
-
-    cancel_id = ct_cancel_order(api_key, str(order_id), ct_symbol)
-
+    cancel_id = ct_cancel_order(api_key, order_id, ct_symbol)
 
     # todo
     time_frame = 2880 # 2 days ago - 60m*48 # how far back should we look in time. 10 minutes
