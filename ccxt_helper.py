@@ -3,6 +3,8 @@ import os
 import configparser
 import ccxt
 import pandas as pd
+from cointiger_sdk import cointiger
+
 
 """
 The purpose of this class is to help setup ccxt exchange configuration. 
@@ -16,8 +18,9 @@ logging.basicConfig(
 )
 
 
-def get_exchange_config(config_filename):
+def get_exchange_config(config_filename, exch_name):
     """
+    use this method for testing, not in dexbot production
     get exchange config based on filename
     :param config_file:
     :return:
@@ -29,26 +32,15 @@ def get_exchange_config(config_filename):
         exch_ids = parser.sections()
         log.info(f'config file: {config_dir}, {config_filename}')
         log.info(f"exchange ids {exch_ids}")
-        sec = {section_name: dict(parser.items(section_name)) for section_name in exch_ids}
+        if exch_name in exch_ids:
+            sec = { exch_name: dict(parser.items(exch_name)) }
+#            sec = {section_name: dict(parser.items(section_name)) for section_name in exch_ids}
         return sec
     except (FileNotFoundError, PermissionError, OSError) as e:
         log.error(e)
         pass
 
-
-def get_strategy(config_sections):
-    """
-    return the name of the strategy for a given exchange configuration
-    :param config_sections:
-    :return:
-    """
-    exch_name = list(config_sections)[0]
-    strategy = config_sections[exch_name]['strategy']
-    log.info(f"strategy:  {strategy}")
-    return strategy
-
-
-def get_exchange(config_sections):
+def get_exchange_keys(config_sections, exch_name):
     # need to fix below in order to check for for
     # acceptable exchanges and parameters
     # for now, get 0th exchange
@@ -57,14 +49,48 @@ def get_exchange(config_sections):
     :param config_sections: api keys and secrets from encrypted config file.
     :return:
     """
-    exch_name = list(config_sections)[0]
+    if exch_name is not list(config_sections)[0]:
+        return None, None, None
+
     apikey = config_sections[exch_name]['api_key']
     secret = config_sections[exch_name]['secret']
     passwd = config_sections[exch_name]['fund-password']
+    strategy = config_sections[exch_name]['strategy']
 
     log.info(f"API Key:  {apikey}")
     log.info(f"SECRET: {secret})")
     log.info(f"fund-passwd:  {passwd}")
+    log.info(f"API Key:  {strategy}")
+
+    return apikey, secret, passwd
+
+def get_cointiger_module(config_file):
+    """
+    instantiate a cointiger module from the cointiger sdk
+    cointiger sdk at https://github.com/CoinTiger/CoinTiger_SDK_Python
+    :param config_file:
+    :param exch_name: cointiger
+    :return: api_key o
+    """
+    exch_name = 'cointiger'
+    config_sections = get_exchange_config(config_file, exch_name)
+    log.info(config_sections)
+    api_key, secret, passwd = get_exchange_keys(config_sections, exch_name)
+
+    setkey = cointiger.set_key_and_secret(api_key, secret)
+    log.info(f'setting api key, secret : {setkey}')
+    return api_key
+
+
+def get_ccxt_module(config_file, exch_name):
+    """
+    instantiate a ccxt module from the config
+    :return: ccxt module
+    """
+    config_sections = get_exchange_config(config_file, exch_name)
+    log.info(config_sections)
+
+    apikey, secret, passwd = get_exchange_keys(config_sections, exch_name)
 
     # coin tiger requires an API key, even if only for ticker data
     # other exchanges do not need the API key unless trading.
@@ -78,17 +104,6 @@ def get_exchange(config_sections):
         'precision': {'price': 8,
                       'amount': 8, }
     })
-    return ccxt_ex
-
-
-def get_ccxt_module(config_file):
-    """
-    instantiate a ccxt module from the config
-    :return: ccxt module
-    """
-    config_sections = get_exchange_config(config_file)
-    log.info(config_sections)
-    ccxt_ex = get_exchange(config_sections)
     return ccxt_ex
 
 

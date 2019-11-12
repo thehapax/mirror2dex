@@ -90,7 +90,7 @@ class CcxtExchange:
             self.log.exception("fetch_order exception {}".format(str(e)))
             raise e
 
-    def cancel_order(self, order_id: int):
+    def cancel_order(self, order_id, symbol=None, params={}):
         """
         cancel order based on order_id
 
@@ -98,15 +98,23 @@ class CcxtExchange:
         :return:
         """
         try:
-            self.exchange.cancel_order(order_id)
+            self.exchange.cancel_order(order_id, symbol, params)
         except OrderNotFound:
             self.log.exception("cancel_order exception {}".format(OrderNotFound))
             # treat as success
             pass
 
     # add method here to cancel all orders
+    def cancel_orders(self, ids, symbol=None, params={}):
+        try:
+            self.exchange.cancel_order(ids, symbol, params)
+        except OrderNotFound:
+            self.log.exception("cancel_order exception {}".format(OrderNotFound))
+            # treat as success
+            pass
 
-    def create_sell_order(self, symbol: str, amount: float, price: float):
+
+    def create_sell_order(self, symbol: str, amount: float, price: float, params: dict):
         """
         create sell order based on symbol with amount and price
 
@@ -116,12 +124,13 @@ class CcxtExchange:
         :return:
         """
         try:
-            return self.exchange.create_order(symbol=symbol, type="limit", side="sell", amount=amount, price=price)
+            return self.exchange.create_order(symbol=symbol, type="limit", side="sell",
+                                              amount=amount, price=price, params=params)
         except ccxt.BaseError as e:
             self.log.exception("create_sell_order exception {}".format(str(e)))
             raise e
 
-    def create_buy_order(self, symbol: str, amount: float, price: float):
+    def create_buy_order(self, symbol: str, amount: float, price: float, params: dict):
         """
         create buy order based on symbol with amount and price
 
@@ -131,7 +140,8 @@ class CcxtExchange:
         :return:
         """
         try:
-            return self.exchange.create_order(symbol=symbol, type="limit", side="buy", amount=amount, price=price)
+            return self.exchange.create_order(symbol=symbol, type="limit", side="buy",
+                                              amount=amount, price=price, params=params)
         except ccxt.BaseError as e:
             self.log.exception("create_buy_order exception {}".format(str(e)))
             raise e

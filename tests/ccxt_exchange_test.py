@@ -3,13 +3,17 @@ sys.path.append("..")
 
 import logging
 from ccxt_exchange import CcxtExchange
-from ccxt_helper import get_exchange, get_exchange_config
+from ccxt_helper import get_ccxt_module, get_cointiger_module
 import pandas as pd
 
-from datetime import datetime, timedelta, timezone
+from cointiger_sdk import cointiger
+from cointiger_sdk import const
+from datetime import timedelta, timezone, datetime
+import time
+
 
 """
-    Todo: This version neeeds to be completed and swapped out with the dexbot version
+    Todo: This version to be completed and swapped out with the dexbot version
 
     Temporary informal unit test for ccxt exchange
     
@@ -19,15 +23,13 @@ from datetime import datetime, timedelta, timezone
 
     Need to Hard code fees fro Cointiger, not avail through API call. 
     Cointiger is 0.15% for taker and 0.08% for maker
+    
 """
-
 log = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s'
 )
-
-# cointiger example sdk https://github.com/CoinTiger/CoinTiger_SDK_Python
 
 
 def test_print_orderbooks(symbol, cx):
@@ -60,6 +62,20 @@ def get_cex_data(l2, depth: int):
     ask_df['type'] = 'asks'
 
     return ask_df.head(depth), bid_df.head(depth)
+
+
+def display_orderbook(depth: int, symbol: str, cx: CcxtExchange):
+    log.info(f'symbol: {symbol}')
+    #   test_print_orderbooks(symbol, cx)
+
+    # fetch current order book with order depth
+    l2_ob = cx.fetch_l2_order_book(symbol)
+    asks, bids = get_cex_data(l2_ob, depth)
+    pd.options.display.float_format = "{:.8f}".format
+    log.info(f'Asks:\n {asks}')
+    log.info(f'Bids:\n {bids}')
+    return asks, bids
+
 
 
 ################ fees and trade calc ################################
@@ -111,90 +127,132 @@ def calc_trade_amt(percent, price_df, asset, free_bal, min_bal):
         return 0,0
 
 
+def get_timedelta(time_frame):
+    """
+    get since_ts based on time frame in minues
+    :param time_frame: time in minutes
+    :return: time delta (based on utc)
+    """
+    # Time management
+    now_ts = datetime.now(timezone.utc)
+    dt = now_ts - timedelta(minutes=time_frame)
+    since_ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    log.info(f'Now Timestamp {int(now_ts.replace(tzinfo=timezone.utc).timestamp())},'
+             f'Time 10 minutes ago: {since_ts}')
+    return since_ts
+
+
+def setup_cointiger(config_file):
+    api_key = get_cointiger_module(config_file)
+    return api_key
+
+
+def ct_cancel_order(api_key, order_id, symbol):
+
+    cancel_data = {
+        'api_key': api_key,
+        'orderIdList': '{'+ symbol + ':[' + str(order_id) + ']}',
+        'time': int(time.time()),
+    }
+    log.info(cancel_data)
+
+    try:
+        log.info("COINTIGER BATCH CANCEL")
+        cancel_resp = cointiger.batch_cancel(dict(cancel_data, **{'sign': cointiger.get_sign(cancel_data)}))
+        log.info(cancel_resp)
+
+        order_id = None
+        code_resp = cancel_resp['code']
+        if code_resp == '0':
+            log.info(f"SUCCESS: {cancel_resp}")
+            order_id = cancel_resp['data']['success'][0]
+        return order_id
+    except Exception as e:
+        log.error(e)
+
+
+def ct_place_order(api_key, price, volume, symbol, side_type):
+    side = const.SideType.SELL.value
+    if side_type is 'buy':
+        side = const.SideType.BUY.value
+
+    order_data = {
+        'api_key': api_key,
+        'symbol': symbol,
+        'price': str(price),
+        'volume': str(volume),
+        'side': side,
+        'type': const.OrderType.LimitOrder.value,
+        'time': int(time.time())
+    }
+    log.info(f'order data: {order_data}')
+    log.info("COINTIGER: get signature from order data")
+    log.info(cointiger.get_sign(order_data))
+
+    log.info("COINTIGER PLACE ORDER")
+    ct_resp = cointiger.order(dict(order_data, **{'sign': cointiger.get_sign(order_data)}))
+    log.info(ct_resp)
+
+    order_id = None
+    code_resp = ct_resp['code']
+    log.info(f'Code from COINTIGER {code_resp}')
+
+    if ct_resp['code'] == '0':
+        order_id = ct_resp['data']['order_id'][0] # get zeroth order id
+        log.info(f"Order ID FROM COINTIGER ORDER: {order_id}")
+    return order_id
+
+
 if __name__ == '__main__':
 
     #symbol = 'BTS/BTC'
     #bitshares_symbol = 'BTS/OPEN.BTC'
     symbol = 'BTS/ETH'
     bitshares_symbol = 'BTS/OPEN.ETH'
+    ct_symbol = symbol.replace('/', '').lower()
 
     ask_symbol = symbol.split('/')[0]
     bid_symbol = symbol.split('/')[1]
     log.info(f'CEX Price: Ask Symbol ({ask_symbol}), Vol is Amount: Bid Symbol: ({bid_symbol})')
 
+    min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
+
     # update this to reflect your config file
     config_file = "safe/secrets_test.ini"
-
-    config_sections = get_exchange_config(config_file)
-    ct = config_sections['cointiger']
-    log.info('\n')
-    log.info(f'Config sections: {ct}')
-
-    ccxt_ex = get_exchange(config_sections)
+    api_key = setup_cointiger(config_file)
+    ccxt_ex = get_ccxt_module(config_file, 'cointiger')
     cx = CcxtExchange(exchange=ccxt_ex)
 
-    log.info(f'symbol: {symbol}')
-#   test_print_orderbooks(symbol, cx)
-
-    l2_ob = ccxt_ex.fetch_l2_order_book(symbol)
-    asks, bids = get_cex_data(l2_ob, depth=2)
-#    pd.set_option('float_format', '{:f}'.format)
-    pd.options.display.float_format = "{:.8f}".format
-    log.info(f'Asks:\n {asks}')
-    log.info(f'Bids:\n {bids}')
+    asks, bids = display_orderbook(2, symbol, cx)
 
     """
     test buy and sell on cex exchanges
     """
     free_bal = cx.free_balance
     log.info(f"All Available Free Balance: {free_bal}")
-
-    min_bal_percentage = 0.10  # do not use 10% of free balance, keep at least 10% around.
-
-    # test buy 5% of free balance
-    buy_amt, buy_price = calc_trade_amt(0.50, asks, bid_symbol, free_bal, min_bal_percentage)
-    log.info(f"Buy Amount: {buy_amt}, Buy Price: {buy_price}")
-
     log.info ("################################")
-    log.info(f"Creating Market Buy Order: {bid_symbol}, Amt: {buy_amt}, Price:{buy_price}")
-    # uncomment to execute test buy order
-#    if buy_amt > 0:
-#        buy_id = cx.create_buy_order(symbol, buy_amt, buy_price)
-#        fetched_order = cx.fetch_order(buy_id)
-#        log.info(f'fetched buy order: {fetched_order}')
+
     # test sell 5% of free balance
     sell_amt, sell_price = calc_trade_amt(0.6, bids, ask_symbol, free_bal, min_bal_percentage)
-    log.info(f"Creating Market Sell Order: {ask_symbol}, Amt: {sell_amt}, Price:{sell_price}")
-    if sell_amt > 0:
-        sell_id = cx.create_sell_order(symbol, sell_amt, sell_price)
-        forder = cx.fetch_order(buy_id)
-        log.info(f'fetched sell order: {forder}')
+    log.info(f"Preparing Market Sell Order: {ask_symbol}, Amt: {sell_amt}, Price:{sell_price}")
 
-# Note: Cointiger error:  createOrder requires exchange.password to be
-    # set to user trading password(not login passwordnot )')
+    price = 0.00016
+    volume = 320
+    side_type = 'sell'
 
-    # synthetic test for 'ETH' asset, amt = 0.1, percent = 0.05
-#    sell_amt = 0.1* 0.05
-#    sell_price = bids['price'][0]
-#    log.info(f'synthetic (zero bal): {ask_symbol}, sell amt {sell_amt}, sell_price {sell_price}')
-    # end synthetic
+#    order_id = ct_place_order(api_key, price, volume, ct_symbol, side_type)
 
-    my_trades = cx.fetch_my_trades(symbol)
-    log.info(f"Fetch my trades {symbol}: Trades:\n{my_trades}")
+    order_id = 127671510
+    log.info(f"printing Order_ID: {order_id}")
 
-    open_orders = cx.fetch_open_orders(symbol=symbol)
-    log.info(f"Fetch Open Orders: {symbol}:\n{open_orders}")
+    cancel_id = ct_cancel_order(api_key, str(order_id), ct_symbol)
 
-    # Time management
-    orderbook_ts = asks['timestamp'][0]
-    log.info(f'Order book Timestamp {orderbook_ts}')
-    time_frame = 10  # how far back should we look in time. 10 minutes
-    now_ts = datetime.now(timezone.utc)
-    dt = now_ts - timedelta(minutes=time_frame)
-    since_ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
-    log.info(f'Now Timestamp {int(now_ts.replace(tzinfo=timezone.utc).timestamp())},'
-             f'Time 10 minutes ago: {since_ts}')
 
+    # todo
+    time_frame = 2880 # 2 days ago - 60m*48 # how far back should we look in time. 10 minutes
+    since_ts = get_timedelta(time_frame)
+
+    log.info("################################")
     # keep checking status of order
     while True:
         if 'fetchMyTrades' in cx.method_list:
@@ -202,9 +260,9 @@ if __name__ == '__main__':
         if 'fetchOpenOrders' in cx.method_list:
             log.info(f'fetch open orders: {cx.fetch_open_orders(symbol)}')
         if 'fetchClosedOrders' in cx.method_list:
-            log.info(f'fetch closed orders: {cx.fetch_closed_orders(symbol, since_ts)}')
+            log.info(f'fetch closed orders: {cx.fetch_closed_orders(symbol, since_ts*1000)}')
 
     # todo:
-    #   cx.cancel_order(order_id)
+    #   cx.cancel_order(order_id, symbol, {}):
     #   all_orders = cx.get_all_closed_orders_since_to(symbol, since, to)
     #   log.info(f"Fetching All closed Orders for {symbol} since {since} to {to} : {all_orders}")
