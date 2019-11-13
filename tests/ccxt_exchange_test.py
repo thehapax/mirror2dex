@@ -155,6 +155,13 @@ def setup_cointiger(config_file):
 
 
 def ct_cancel_order(api_key, order_id, symbol):
+    """
+    cancel order
+    :param api_key: api_key
+    :param order_id: order id
+    :param symbol: symbol traded
+    :return: order_id, code_resp (0 if success, 1 or 2 if error)
+    """
 
     cancel_data = {
         'api_key': api_key,

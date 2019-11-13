@@ -1,4 +1,4 @@
-from bts_spread_mapper import setup_bitshares_market, get_bts_ob_data, get_bts_config
+from bts_spread_mapper import setup_bitshares_market, get_bts_ob_data
 from ccxt_helper import get_ccxt_module, get_cex_data
 from ascii_plot_helper import dynamic_ascii_plot, format_df_ascii
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     # update this to reflect your config file
     config_file = "safe/secrets_test.ini"
-    ccxt_ex = get_ccxt_module(config_file)
+    ccxt_ex = get_ccxt_module(config_file, 'cointiger')
 
     # set time to UTC
     os.environ['TZ'] = 'UTC'
