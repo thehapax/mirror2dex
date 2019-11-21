@@ -16,6 +16,8 @@ logging.basicConfig(
 Setup config file and methods to get orderbook from bitshares exchange 
 """
 
+# todo: Write method to cancel all orders on a bitshares account via uptick.
+
 # temporary for testing without dexbot only.
 def get_bts_config(bts_config_file):
     try:
