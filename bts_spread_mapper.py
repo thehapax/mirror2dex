@@ -43,7 +43,7 @@ def get_bts_config(bts_config_file):
 def setup_bitshares_market(bts_symbol):
     bitshares_instance = BitShares(
         "wss://siliconvalley.us.api.bitshares.org/ws",
-        # "wss://new-york.us.api.bitshares.org/ws",
+        "wss://bitshares.openledger.info/ws",
         nobroadcast=True  # <<--- set this to False when you want to fire!
     )
     bts_config_file = "safe/bitshares.ini"
