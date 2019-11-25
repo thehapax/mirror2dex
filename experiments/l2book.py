@@ -14,6 +14,11 @@ from bitshares.amount import Amount
 import time
 import logging
 
+"""
+get order books and plot using matplotlib
+"""
+
+
 log = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
