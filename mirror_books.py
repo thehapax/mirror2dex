@@ -63,12 +63,13 @@ if __name__ == '__main__':
         
         mirror_asks, mirror_bids = get_cex_mirror(ask_df, bid_df, ask_bal, bid_bal)
         if (mirror_asks is not None) and (mirror_bids is not None):
+            # todo: this is the DF that will be placing orders
+            #  on the dex in bulk, and then cancelled every X time interval
+            #  in order to produce a visual movement in orders
             m_df = pd.concat([mirror_asks, mirror_bids])
             m_df.sort_values('price', inplace=True, ascending=False)
             #print(m_df)
 
-            # adjust column name in mirror df from vol_scaled to be vol
-            # or else format_df_ascii won't work properly
             #scaled_mirror = format_df_ascii(m_df)
             #print(scaled_mirror)
             #dynamic_ascii_plot(scaled_mirror, mirror_plot_title)

@@ -1,8 +1,7 @@
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 
-#scaler = StandardScaler()
-scaler = MinMaxScaler(feature_range=(0.1, 1))
+scaler = MinMaxScaler(feature_range=(0, 1))
 
 asks_df = pd.DataFrame()
 bids_df = pd.DataFrame()
@@ -16,10 +15,10 @@ bids_df['vol_scaled'] = scaler.fit_transform(bids_df['vol'].values.reshape(-1, 1
 asks_df = asks_df.rename(columns={"vol": "cex_vol"})
 bids_df = bids_df.rename(columns={"vol": "cex_vol"})
 
-print(asks_df)
-print(bids_df)
+print(f'asks scaler fit:\n {scaler.fit(asks_df)}')
+print(f'asks scaler transform:\n{scaler.transform(asks_df)}\n{asks_df}')
 
-print(f'scaler fit: {scaler.fit(asks_df)}')
-print(f'scaler transform: {scaler.transform(asks_df)}')
+print(f'bids scaler fit:\n {scaler.fit(bids_df)}')
+print(f'bids scaler transform:\n{scaler.transform(bids_df)}\n{bids_df}')
 
-# https://stackoverflow.com/questions/51841506/data-standardization-vs-normalization-vs-robust-scaler
+
