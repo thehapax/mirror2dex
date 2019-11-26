@@ -9,12 +9,21 @@ logging.basicConfig(
 )
 
 def format_df_ascii(df):
+    """
+    format df so that it can be plotted with ascii graph
+    :param df: df
+    :return: colorized df in type column
+    """
     # ascii CLI graph - order book coloring for primary order book red/green.
     # colors for your mirror orders, yellow/blue
     ob_color = {'asks': Red, 'bids': Gre, 'mirror_asks': Yel, 'mirror_bids': Blu}
     # replace asks and bids with corresponding color
     df.loc[df['type'] == 'asks', 'type'] = ob_color['asks']
     df.loc[df['type'] == 'bids', 'type'] = ob_color['bids']
+
+    df.loc[df['type'] == 'mirror_asks', 'type'] = ob_color['mirror_asks']
+    df.loc[df['type'] == 'mirror_bids', 'type'] = ob_color['mirror_bids']
+
     df = df[['price', 'vol', 'type']]
     return df
 

@@ -1,4 +1,5 @@
 import logging
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -15,10 +16,10 @@ def single_trade_arb(cex_df, bts_df):
     :return:
     """
     # get closest bid/ask
+    # todo : get closese bid/ask with actual tradeable volume, not dust, and not below min trade limit.
     cex_spread_df = cex_df[cex_df.index == 0]  # get closest bid/ask
     bts_spread_df = bts_df[bts_df.index == 0]
     calculate_arb_opp(cex_spread_df, bts_spread_df)
-
 
 
 def get_ordersize():
@@ -83,6 +84,8 @@ def calculate_arb_opp(cex_df, bts_df):  # calculate arbitrage opportunity
 
 
 def get_cex_mirror(asks_df, bids_df, asks_bal, bids_bal):
+    # how we selected the scaling method, MinMaxScaler()
+    # https://towardsdatascience.com/scale-standardize-or-normalize-with-scikit-learn-6ccc7d176a02
     """
     todo
     get scaled mirror of cex in dex dataframe
@@ -92,29 +95,51 @@ def get_cex_mirror(asks_df, bids_df, asks_bal, bids_bal):
     :param bts_df:
     :return:
     """
-    # normalize volue by placing [0,1] values into 'vol_scaled' column
-    scaler = MinMaxScaler()
-    asks_df['vol_scaled'] = scaler.fit_transform(asks_df['vol'].values.reshape(-1, 1))
-    bids_df['vol_scaled'] = scaler.fit_transform(bids_df['vol'].values.reshape(-1, 1))
+    # normalize volume by placing [0,1] values into 'vol_scaled' column
+    try:
+        asks_df = asks_df.rename(columns={"vol": "cex_vol"})
+        bids_df = bids_df.rename(columns={"vol": "cex_vol"})
 
-    asks_total = asks_df['vol_scaled'].sum()
-    bids_total = bids_df['vol_scaled'].sum()
+        scaler = MinMaxScaler()
+        asks_df['vol'] = scaler.fit_transform(asks_df['cex_vol'].values.reshape(-1, 1))
+        bids_df['vol'] = scaler.fit_transform(bids_df['cex_vol'].values.reshape(-1, 1))
 
-    # distribute balance across volume
-    asks_dist = asks_bal/asks_total
-    bids_dist = bids_bal/bids_total
+        # remove zero row values for vol
+        asks_df = asks_df[asks_df['vol'] != 0]
+        bids_df = bids_df[bids_df['vol'] != 0]
 
-    print(f"asks_total: {asks_total}, bids_total: {bids_total}")
-    print(f"asks_DIST: {asks_dist}, bids_DIST: {bids_dist}")
+        asks_total = asks_df['vol'].sum()
+        bids_total = bids_df['vol'].sum()
 
-    asks_df['vol_scaled'] = asks_df['vol_scaled'].mul(asks_dist)
-    bids_df['vol_scaled'] = bids_df['vol_scaled'].mul(bids_dist)
+        if (bids_total == 0) or (asks_total == 0):
+            # avoid division by zero
+            return None, None
 
-    # remove zero row values for dex_vol
-    asks_df = asks_df[asks_df['vol_scaled'] != 0]
-    bids_df = bids_df[bids_df['vol_scaled'] != 0]
+        # distribute balance across volume
+        asks_dist = asks_bal/asks_total
+        bids_dist = bids_bal/bids_total
 
-    # return and place orders on dex.
-    return asks_df, bids_df
+        log.debug(f"asks_total: {asks_total}, bids_total: {bids_total}")
+        log.debug(f"asks_DIST: {asks_dist}, bids_DIST: {bids_dist}")
+
+        asks_df['vol'] = asks_df['vol'].mul(asks_dist)
+        bids_df['vol'] = bids_df['vol'].mul(bids_dist)
+
+        asks_df.loc[asks_df['type'] == 'asks', 'type'] = 'mirror_asks'
+        bids_df.loc[bids_df['type'] == 'bids', 'type'] = 'mirror_bids'
+
+        asks_df.drop(columns=['cex_vol'], inplace=True)
+        bids_df.drop(columns=['cex_vol'], inplace=True)
+
+        # order columns properly
+        asks_df = asks_df[['price', 'vol', 'timestamp', 'type']]
+        bids_df = bids_df[['price', 'vol', 'timestamp', 'type']]
+        # return and place orders on dex.
+        return asks_df, bids_df
+
+    except Exception as e:
+        log.error(e)
+        return None, None
+
 
 
