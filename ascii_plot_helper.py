@@ -17,15 +17,19 @@ def format_df_ascii(df):
     # ascii CLI graph - order book coloring for primary order book red/green.
     # colors for your mirror orders, yellow/blue
     ob_color = {'asks': Red, 'bids': Gre, 'mirror_asks': Yel, 'mirror_bids': Blu}
+
     # replace asks and bids with corresponding color
-    df.loc[df['type'] == 'asks', 'type'] = ob_color['asks']
-    df.loc[df['type'] == 'bids', 'type'] = ob_color['bids']
+    # in a new copied dataframe so original data preserved
+    c_df = df.copy()
 
-    df.loc[df['type'] == 'mirror_asks', 'type'] = ob_color['mirror_asks']
-    df.loc[df['type'] == 'mirror_bids', 'type'] = ob_color['mirror_bids']
+    c_df.loc[c_df['type'] == 'asks', 'type'] = ob_color['asks']
+    c_df.loc[c_df['type'] == 'bids', 'type'] = ob_color['bids']
 
-    df = df[['price', 'vol', 'type']]
-    return df
+    c_df.loc[df['type'] == 'mirror_asks', 'type'] = ob_color['mirror_asks']
+    c_df.loc[df['type'] == 'mirror_bids', 'type'] = ob_color['mirror_bids']
+
+    c_df = c_df[['price', 'vol', 'type']]
+    return c_df
 
 
 def dynamic_ascii_plot(df, title):

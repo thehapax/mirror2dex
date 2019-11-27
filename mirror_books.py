@@ -25,20 +25,22 @@ bts_symbol = "BTS/OPEN.ETH"
 cex_plot_title = "Cointiger Orderbook: " + cex_symbol
 bts_plot_title = "Bitshares DEX Orderbook: " + bts_symbol    
 cex_dex_title = "Combined Cex mirror to BTS Dex"
-mirror_plot_title = "Scaled Mirrored CEX Orderbook "
+mirror_plot_title = "Scaled Mirrored CEX Orderbook"
+opp_df_title = "Arb opportunity Dataframe"
+
 
 # type 1 is scaled mirror, type 2 is exact mirror
-scale_type = 1
+scale_type = 2
 
 
 def scaled_ob_grp(m_df, bts_df):
     # Option #1  concatenate order books (scaled mirror and bts dex)
     new_bts = pd.concat([m_df, bts_df], sort=False) # to help manage legacy
     new_bts.sort_values('price', inplace=True, ascending=False)
-#    print(new_bts)
-    new_bts_combo = format_df_ascii(new_bts)
-    dynamic_ascii_plot(new_bts_combo, cex_dex_title)
-    return new_bts_combo
+#   print(new_bts)
+    new_bts_ascii = format_df_ascii(new_bts)
+    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
+    return new_bts
     
 
 def scaled_mirror(mirror_asks, mirror_bids, bts_df):
@@ -69,11 +71,20 @@ def exact_ob_grp(cex_ask_df, cex_bid_Df, bts_df):
     all_dfs = [cex_ask_df, cex_bid_df, bts_df]
     new_bts = pd.concat(all_dfs, sort=False)
     new_bts.sort_values('price', inplace=True, ascending=False)
-    new_bts_combo = format_df_ascii(new_bts)
-    dynamic_ascii_plot(new_bts_combo, cex_dex_title)
-    return new_bts_combo
+
+    new_bts_ascii = format_df_ascii(new_bts)
+    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
+    return new_bts
     
+
+def calc_arb_opp(combo):
+    combo['PxV'] = combo.price*combo.vol
+    print(f'limit volume: {vol_floor}')
+    limit_vol = combo[combo['vol'] > vol_floor]
+    print(limit_vol)
+    return limit_vol
     
+
 if __name__ == '__main__':
 
 
@@ -86,7 +97,11 @@ if __name__ == '__main__':
     ccxt_ex = get_ccxt_module(config_file, 'cointiger')
     bts_market = setup_bitshares_market(bts_symbol)
 
+    # minimum volume to trade on cex - we set at 350 bts for now
+    vol_floor = 160
+    
     depth = 5  # how deep do you want to map your orders
+
     # BTS/OPEN.ETH
     bid_bal = 100    # OPEN.ETH
     ask_bal = 10000  # BTS
@@ -103,15 +118,14 @@ if __name__ == '__main__':
         ob_df.sort_values('price', inplace=True, ascending=False)
         #print(ob_df)
         cex = format_df_ascii(ob_df)
-        dynamic_ascii_plot(cex, cex_plot_title)
+#        dynamic_ascii_plot(cex, cex_plot_title)
         
         # get bts data
         bts_df = get_bts_ob_data(bts_market, depth=depth)
         bts_dex = format_df_ascii(bts_df)
-        dynamic_ascii_plot(bts_dex, bts_plot_title)
+#        dynamic_ascii_plot(bts_dex, bts_plot_title)
 
-        combo_df = pd.DataFrame()
-        
+        combo_df = pd.DataFrame()       
         if scale_type == 1:
             # option #1:  map scaled cex trades to BTS dex        
             mirror_asks, mirror_bids = get_cex_mirror(cex_ask_df, cex_bid_df, ask_bal, bid_bal)
@@ -119,6 +133,8 @@ if __name__ == '__main__':
         elif scale_type == 2:
             # option #2: exact mirror, no scaling
             combo_df = exact_ob_grp(cex_ask_df, cex_bid_df, bts_df)
-
+            opp_df = calc_arb_opp(combo_df)
+            opp_ascii = format_df_ascii(opp_df)
+            dynamic_ascii_plot(opp_ascii, opp_df_title)
             
         time.sleep(3)
