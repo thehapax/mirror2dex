@@ -24,7 +24,7 @@ bts_symbol = "BTS/OPEN.ETH"
 
 cex_plot_title = "Cointiger Orderbook: " + cex_symbol
 bts_plot_title = "Bitshares DEX Orderbook: " + bts_symbol    
-
+cex_dex_title = "Combined Cex mirror to BTS Dex"
 
 if __name__ == '__main__':
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     depth = 5  # how deep do you want to map your orders
     # BTS/OPEN.ETH
-    bid_bal = 10    # OPEN.ETH
+    bid_bal = 100    # OPEN.ETH
     ask_bal = 10000  # BTS
     
     while True:
@@ -50,8 +50,8 @@ if __name__ == '__main__':
         print(cex_plot_title)
         # cex data
         l2_ob = ccxt_ex.fetch_l2_order_book(symbol=cex_symbol, limit=None)
-        ask_df, bid_df = get_cex_data(l2_ob, depth=depth)  # dynamic data
-        ob_df = pd.concat([ask_df.head(depth), bid_df.head(depth)])
+        cex_ask_df, cex_bid_df = get_cex_data(l2_ob, depth=depth)  # dynamic data
+        ob_df = pd.concat([cex_ask_df.head(depth), cex_bid_df.head(depth)])
         ob_df.sort_values('price', inplace=True, ascending=False)
         #print(ob_df)
         cex = format_df_ascii(ob_df)
@@ -61,31 +61,38 @@ if __name__ == '__main__':
         mirror_plot_title = "Scaled Mirrored CEX Orderbook "
         log.info(mirror_plot_title)
         
-        mirror_asks, mirror_bids = get_cex_mirror(ask_df, bid_df, ask_bal, bid_bal)
+        mirror_asks, mirror_bids = get_cex_mirror(cex_ask_df, cex_bid_df, ask_bal, bid_bal)
         if (mirror_asks is not None) and (mirror_bids is not None):
             # todo: this is the DF that will be placing orders
             #  on the dex in bulk, and then cancelled every X time interval
             #  in order to produce a visual movement in orders
             m_df = pd.concat([mirror_asks, mirror_bids])
             m_df.sort_values('price', inplace=True, ascending=False)
-            #print(m_df)
+            # print(m_df)
 
-            #scaled_mirror = format_df_ascii(m_df)
-            #print(scaled_mirror)
-            #dynamic_ascii_plot(scaled_mirror, mirror_plot_title)
+            # scaled_mirror = format_df_ascii(m_df)
+            # print(scaled_mirror)
+            # dynamic_ascii_plot(scaled_mirror, mirror_plot_title)
 
             # get bts data
             bts_df = get_bts_ob_data(bts_market, depth=depth)
-            # print(bts_df)
-            # bts_dex = format_df_ascii(bts_df)
-            # dynamic_ascii_plot(bts_dex, bts_plot_title)
+            bts_dex = format_df_ascii(bts_df)
+            dynamic_ascii_plot(bts_dex, bts_plot_title)
 
-            # concatenate order books
-            new_bts = pd.concat([m_df, bts_df], sort=False) # to help manage legacy
-            new_bts.sort_values('price', inplace=True, ascending=False)
-
+            # Option #1  concatenate order books (scaled mirror and bts dex)
+            # new_bts = pd.concat([m_df, bts_df], sort=False) # to help manage legacy
+            # new_bts.sort_values('price', inplace=True, ascending=False)
             # print(new_bts)
+            # new_bts_combo = format_df_ascii(new_bts)
+            # dynamic_ascii_plot(new_bts_combo, cex_dex_title)
+
+            # Option #2 concatenate order books (cex and dex) 
+            cex_ask_df.loc[cex_ask_df['type'] == 'asks', 'type'] = 'mirror_asks'
+            cex_bid_df.loc[cex_bid_df['type'] == 'bids', 'type'] = 'mirror_bids'
+            all_dfs = [cex_ask_df, cex_bid_df, bts_df]
+            new_bts = pd.concat(all_dfs, sort=False)
+            new_bts.sort_values('price', inplace=True, ascending=False)
             new_bts_combo = format_df_ascii(new_bts)
-            dynamic_ascii_plot(new_bts_combo, "Combined cex mirror to dex")
+            dynamic_ascii_plot(new_bts_combo, cex_dex_title)
 
         time.sleep(3)
