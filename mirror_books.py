@@ -34,16 +34,32 @@ scale_type = 2
 
 
 def scaled_ob_grp(m_df, bts_df):
+    """
+    combine order book from m_df (cec) and bts_df
+    :param m_df:
+    :param bts_df:
+    :return: new_bts, a dataframe
+    """
     # Option #1  concatenate order books (scaled mirror and bts dex)
     new_bts = pd.concat([m_df, bts_df], sort=False) # to help manage legacy
     new_bts.sort_values('price', inplace=True, ascending=False)
-#   print(new_bts)
-    new_bts_ascii = format_df_ascii(new_bts)
-    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
+    # display info for testing
+    # print(new_bts)
+    # new_bts_ascii = format_df_ascii(new_bts)
+    # dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
     return new_bts
     
 
 def scaled_mirror(mirror_asks, mirror_bids, bts_df):
+    """
+    Scaled the trades from the cex orderbook to the dex
+    order book based on the on balance that the trader has on hand
+    combine both order books and turn
+    :param mirror_asks: asks from cex orderbook
+    :param mirror_bids: bids from cex orderbook
+    :param bts_df: order book from bts dex
+    :return: new combined order books.
+    """
             
     if (mirror_asks is not None) and (mirror_bids is not None):
         # todo: this is the DF that will be placing orders
@@ -64,7 +80,14 @@ def scaled_mirror(mirror_asks, mirror_bids, bts_df):
         return new_bts_combo
 
 
-def exact_ob_grp(cex_ask_df, cex_bid_Df, bts_df):
+def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
+    """
+    mirror order books as is - no modifications between cex and dex
+    :param cex_ask_df:
+    :param cex_bid_Df:
+    :param bts_df:
+    :return:
+    """
     # Option #2 concatenate order books (cex and dex) 
     cex_ask_df.loc[cex_ask_df['type'] == 'asks', 'type'] = 'mirror_asks'
     cex_bid_df.loc[cex_bid_df['type'] == 'bids', 'type'] = 'mirror_bids'
@@ -78,6 +101,11 @@ def exact_ob_grp(cex_ask_df, cex_bid_Df, bts_df):
     
 
 def calc_arb_opp(combo):
+    """
+    Calculate arbitrage opportunity for simple 1 trade strategy
+    :param combo:
+    :return:
+    """
     combo['PxV'] = combo.price*combo.vol
     print(f'limit volume: {vol_floor}')
     limit_vol = combo[combo['vol'] > vol_floor]
@@ -86,7 +114,6 @@ def calc_arb_opp(combo):
     
 
 if __name__ == '__main__':
-
 
     # set time to UTC
     os.environ['TZ'] = 'UTC'
