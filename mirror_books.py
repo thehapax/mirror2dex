@@ -94,23 +94,45 @@ def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     all_dfs = [cex_ask_df, cex_bid_df, bts_df]
     new_bts = pd.concat(all_dfs, sort=False)
     new_bts.sort_values('price', inplace=True, ascending=False)
-
-    new_bts_ascii = format_df_ascii(new_bts)
-    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
+    # display both order books
+    #    new_bts_ascii = format_df_ascii(new_bts)
+    #    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
     return new_bts
     
 
-def calc_arb_opp(combo):
+def calc_arb_opp(combo_df):
     """
     Calculate arbitrage opportunity for simple 1 trade strategy
     :param combo:
     :return:
     """
-    combo['PxV'] = combo.price*combo.vol
-    print(f'limit volume: {vol_floor}')
-    limit_vol = combo[combo['vol'] > vol_floor]
-    print(limit_vol)
-    return limit_vol
+    combo_df['PxV'] = combo_df.price*combo_df.vol
+    print(f'order min limit volume: {vol_floor}')
+    limit_df = combo_df[combo_df['vol'] > vol_floor]
+    print(limit_df)
+    print("----------")
+
+    # group dfs
+    type_grp = limit_df.groupby(['type'])
+
+    # find if any mirror ask < dex bid in type column
+    m_asks = type_grp.get_group('mirror_asks')
+    print(m_asks)
+    print("===========")
+    dex_bids = type_grp.get_group('bids')
+    print(dex_bids)
+
+
+    # find if any dex asks < mirror bids
+    print("===========")
+    dex_asks = type_grp.get_group('asks')
+    print(dex_asks)
+    print("===========")
+    m_bids = type_grp.get_group('mirror_bids')
+    print(m_bids)
+
+
+    return limit_df
     
 
 if __name__ == '__main__':
@@ -145,12 +167,12 @@ if __name__ == '__main__':
         ob_df.sort_values('price', inplace=True, ascending=False)
         #print(ob_df)
         cex = format_df_ascii(ob_df)
-#        dynamic_ascii_plot(cex, cex_plot_title)
+        # dynamic_ascii_plot(cex, cex_plot_title)
         
         # get bts data
         bts_df = get_bts_ob_data(bts_market, depth=depth)
         bts_dex = format_df_ascii(bts_df)
-#        dynamic_ascii_plot(bts_dex, bts_plot_title)
+        # dynamic_ascii_plot(bts_dex, bts_plot_title)
 
         combo_df = pd.DataFrame()       
         if scale_type == 1:
