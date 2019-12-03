@@ -19,8 +19,12 @@ logging.basicConfig(
 #poll_time = 10
 ###
 
-cex_symbol = 'BTS/ETH'
-bts_symbol = "BTS/OPEN.ETH"
+#cex_symbol = 'BTS/ETH'
+#bts_symbol = "BTS/OPEN.ETH"
+
+cex_symbol = 'BTS/BTC'
+bts_symbol = "BTS/OPEN.BTC"
+
 
 cex_plot_title = "Cointiger Orderbook: " + cex_symbol
 bts_plot_title = "Bitshares DEX Orderbook: " + bts_symbol    
@@ -103,33 +107,38 @@ def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
 def calc_arb_opp(combo_df):
     """
     Calculate arbitrage opportunity for simple 1 trade strategy
-    :param combo:
-    :return:
+    :param combo: combined dataframe
+    :return: df with arbitrage trades
     """
     combo_df['PxV'] = combo_df.price*combo_df.vol
+    print("-------- combo_df")
+    print(combo_df)
+    combo_df.to_csv("combo_df.csv", sep=',')
+
     print(f'order min limit volume: {vol_floor}')
     limit_df = combo_df[combo_df['vol'] > vol_floor]
-    print(limit_df)
-    print("----------")
-
-    # group dfs
-    type_grp = limit_df.groupby(['type'])
+#    print("---------- limit_df")
+#    print(limit_df)
 
     # find if any mirror ask < dex bid in type column
-    m_asks = type_grp.get_group('mirror_asks')
-    print(m_asks)
-    print("===========")
-    dex_bids = type_grp.get_group('bids')
-    print(dex_bids)
+    masks = combo_df[combo_df.type == 'mirror_asks']
+    dbids = combo_df[combo_df.type == 'bids']
+    masks.to_csv("masks.csv", sep=",")
+    dbids.to_csv("dbids.csv", sep=",")
 
+    print("============= opp_ge ")
+    opp_ge = dbids.loc[dbids['price'].ge(masks['price'])] # show df where bids > asks
+    print(opp_ge)
+    opp_ge.to_csv("opp_ge.csv", sep=',')
 
     # find if any dex asks < mirror bids
-    print("===========")
-    dex_asks = type_grp.get_group('asks')
-    print(dex_asks)
-    print("===========")
-    m_bids = type_grp.get_group('mirror_bids')
-    print(m_bids)
+    print("============= opp_masks ")
+    opp_masks = masks.loc[dbids['price'].ge(masks['price'])] # show df where bids < asks
+    print(opp_masks)
+    opp_masks.to_csv("opp_masks.csv", sep=',')
+
+    # calculate profitability between opp_ge and opp_masks dfs
+    # make trade if profit is worth it
 
 
     return limit_df
@@ -183,7 +192,7 @@ if __name__ == '__main__':
             # option #2: exact mirror, no scaling
             combo_df = exact_ob_grp(cex_ask_df, cex_bid_df, bts_df)
             opp_df = calc_arb_opp(combo_df)
-            opp_ascii = format_df_ascii(opp_df)
-            dynamic_ascii_plot(opp_ascii, opp_df_title)
+            #opp_ascii = format_df_ascii(opp_df)
+            #dynamic_ascii_plot(opp_ascii, opp_df_title)
             
         time.sleep(3)
