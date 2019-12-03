@@ -117,8 +117,8 @@ def calc_arb_opp(combo_df):
 
     print(f'order min limit volume: {vol_floor}')
     limit_df = combo_df[combo_df['vol'] > vol_floor]
-#    print("---------- limit_df")
-#    print(limit_df)
+#   print("---------- limit_df")
+#   print(limit_df)
 
     # find if any mirror ask < dex bid in type column
     masks = combo_df[combo_df.type == 'mirror_asks']
@@ -139,7 +139,27 @@ def calc_arb_opp(combo_df):
 
     # calculate profitability between opp_ge and opp_masks dfs
     # make trade if profit is worth it
+    min_ask = opp_masks.loc[opp_masks['price'].idxmin()]
+    max_bid = opp_ge.loc[opp_ge['price'].idxmax()]
 
+    if min_ask['vol'] < max_bid['vol']:
+        volume = min_ask['vol']
+    else:
+        volume = max_bid['vol']
+
+    bid_price = max_bid['price']
+    ask_price = min_ask['price']
+
+    print(f'volume: {volume}, bid_price: {bid_price}, mirror ask: {ask_price}')
+    max_profit = volume*(bid_price - ask_price)
+    print(f'max profit {max_profit}')
+
+    #if (max_profit > profit_margin):
+        # take mirror asking price, and sell at dex bid price
+        # place mirror ask order on cex, execute bid on dex simultaneously
+
+    # do above check if possible to do reverse trade
+    # find if any dex ask < mirror bids
 
     return limit_df
     
