@@ -105,8 +105,11 @@ def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     
 
 def calc_arb_opp(combo_df):
+    # todo - change arguments to be 2 separate dfs, mirror_df and dex_df
     """
     Calculate arbitrage opportunity for simple 1 trade strategy
+    mirror is from cex, bids/asks from bitshares dex
+    look for opportunities twice: [mirror_asks, bids] and [mirror_bids, asks]
     :param combo: combined dataframe
     :return: df with arbitrage trades
     """
@@ -117,12 +120,13 @@ def calc_arb_opp(combo_df):
 
     print(f'order min limit volume: {vol_floor}')
     limit_df = combo_df[combo_df['vol'] > vol_floor]
-#   print("---------- limit_df")
-#   print(limit_df)
+    #   print("---------- limit_df")
+    #   print(limit_df)100
 
     # find if any mirror ask < dex bid in type column
     masks = combo_df[combo_df.type == 'mirror_asks']
     dbids = combo_df[combo_df.type == 'bids']
+    # dump to file for testing
     masks.to_csv("masks.csv", sep=",")
     dbids.to_csv("dbids.csv", sep=",")
 
