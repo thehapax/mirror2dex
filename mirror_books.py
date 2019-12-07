@@ -32,7 +32,6 @@ cex_dex_title = "Combined Cex mirror to BTS Dex"
 mirror_plot_title = "Scaled Mirrored CEX Orderbook"
 opp_df_title = "Arb opportunity Dataframe"
 
-
 # type 1 is scaled mirror, type 2 is exact mirror
 scale_type = 2
 
@@ -73,7 +72,7 @@ def scaled_mirror(mirror_asks, mirror_bids, bts_df):
         m_df.sort_values('price', inplace=True, ascending=False)
         # print(m_df)
         
-        # disply scaled mirror by itself
+        # display scaled mirror by itself
         # scaled_mirror = format_df_ascii(m_df)
         # print(scaled_mirror)
         # dynamic_ascii_plot(scaled_mirror, mirror_plot_title)
@@ -95,16 +94,16 @@ def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     # Option #2 concatenate order books (cex and dex) 
     cex_ask_df.loc[cex_ask_df['type'] == 'asks', 'type'] = 'mirror_asks'
     cex_bid_df.loc[cex_bid_df['type'] == 'bids', 'type'] = 'mirror_bids'
-    all_dfs = [cex_ask_df, cex_bid_df, bts_df]
-    new_bts = pd.concat(all_dfs, sort=False)
+    cex_dfs = [cex_ask_df, cex_bid_df]
+    new_bts = pd.concat(cex_dfs, sort=False)
     new_bts.sort_values('price', inplace=True, ascending=False)
     # display both order books
     #    new_bts_ascii = format_df_ascii(new_bts)
     #    dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
-    return new_bts
+    return new_bts, bts_df
     
 
-def calc_arb_opp(combo_df):
+def calc_arb_opp(cex_df, bts_df):
     # todo - change arguments to be 2 separate dfs, mirror_df and dex_df
     """
     Calculate arbitrage opportunity for simple 1 trade strategy
@@ -113,37 +112,47 @@ def calc_arb_opp(combo_df):
     :param combo: combined dataframe
     :return: df with arbitrage trades
     """
-    combo_df['PxV'] = combo_df.price*combo_df.vol
-    print("-------- combo_df")
-    print(combo_df)
-    combo_df.to_csv("combo_df.csv", sep=',')
+
+    cex_df = cex_df[cex_df['vol'] > vol_floor]
+    bts_df = bts_df[bts_df['vol'] > vol_floor]
+
+    # fix the slicing - do we even need to compute PxV here?
+    bts_df['PxV'] = bts_df.price*bts_df.vol
+    cex_df['PxV'] = cex_df.price*cex_df.vol
+    print("-------- bts_df_mirror")
+    print(bts_df)
+    print("-------- cex_df_mirror")
+    print(cex_df)
+    cex_df.to_csv("csv/cex_df_mirror.csv", sep=',')
 
     print(f'order min limit volume: {vol_floor}')
-    limit_df = combo_df[combo_df['vol'] > vol_floor]
-    #   print("---------- limit_df")
-    #   print(limit_df)100
+#    limit_df = cex_df[cex_df['vol'] > vol_floor]
+
+    # if cex asks < dex bids, place trade to
+    # take cex ask off books with a buy order
+    # place ask on dex at bid price to take off books
 
     # find if any mirror ask < dex bid in type column
-    masks = combo_df[combo_df.type == 'mirror_asks']
-    dbids = combo_df[combo_df.type == 'bids']
+    masks = cex_df[cex_df.type == 'mirror_asks']
+    dbids = bts_df[bts_df.type == 'bids']
     # dump to file for testing
-    masks.to_csv("masks.csv", sep=",")
-    dbids.to_csv("dbids.csv", sep=",")
+    masks.to_csv("csv/masks.csv", sep=",")
+    dbids.to_csv("csv/dbids.csv", sep=",")
 
-    print("============= opp_ge ")
-    opp_ge = dbids.loc[dbids['price'].ge(masks['price'])] # show df where bids > asks
+    print("============= opp_ge ")  # bids on dex
+    opp_ge = dbids.loc[dbids['price'].ge(masks['price'])] #show bids df where dex bids > cex asks
     print(opp_ge)
-    opp_ge.to_csv("opp_ge.csv", sep=',')
+    opp_ge.to_csv("csv/opp_ge.csv", sep=',')
 
-    # find if any dex asks < mirror bids
-    print("============= opp_masks ")
-    opp_masks = masks.loc[dbids['price'].ge(masks['price'])] # show df where bids < asks
+    print("============= opp_masks ")  # asks on cex side
+    opp_masks = masks.loc[dbids['price'].ge(masks['price'])]  #show ask df where dex bids > cex asks
     print(opp_masks)
-    opp_masks.to_csv("opp_masks.csv", sep=',')
+    opp_masks.to_csv("csv/opp_masks.csv", sep=',')
+    # return collective opportunity here: opp_masks + opp_ge
 
-    # calculate profitability between opp_ge and opp_masks dfs
+    # calculate single arb profitability between opp_ge and opp_masks dfs
     # make trade if profit is worth it
-    min_ask = opp_masks.loc[opp_masks['price'].idxmin()]
+    min_ask = opp_masks.loc[opp_masks['price'].idxmin()] # get row with min asking price
     max_bid = opp_ge.loc[opp_ge['price'].idxmax()]
 
     if min_ask['vol'] < max_bid['vol']:
@@ -156,16 +165,23 @@ def calc_arb_opp(combo_df):
 
     print(f'volume: {volume}, bid_price: {bid_price}, mirror ask: {ask_price}')
     max_profit = volume*(bid_price - ask_price)
-    print(f'max profit {max_profit}')
+    print(f'max profit: {max_profit}, profit_margin: {profit_margin}')
 
-    #if (max_profit > profit_margin):
+    if (max_profit > profit_margin):
         # take mirror asking price, and sell at dex bid price
         # place mirror ask order on cex, execute bid on dex simultaneously
+        direction = 'cex2dex'
+        trade_info = {'direction': direction,
+                      'volume': volume,
+                      'dex_bid': bid_price,
+                      'mirror_ask': ask_price}
+    else:
+        trade_info = {}
 
     # do above check if possible to do reverse trade
     # find if any dex ask < mirror bids
 
-    return limit_df
+    return trade_info
     
 
 if __name__ == '__main__':
@@ -181,12 +197,14 @@ if __name__ == '__main__':
 
     # minimum volume to trade on cex - we set at 350 bts for now
     vol_floor = 160
-    
+
     depth = 5  # how deep do you want to map your orders
 
     # BTS/OPEN.ETH
     bid_bal = 100    # OPEN.ETH
     ask_bal = 10000  # BTS
+
+    profit_margin = 10  # minimum percentage profit margin to account for fees (trader needs to calc)
     
     while True:
         os.system("clear")
@@ -207,15 +225,22 @@ if __name__ == '__main__':
         bts_dex = format_df_ascii(bts_df)
         # dynamic_ascii_plot(bts_dex, bts_plot_title)
 
-        combo_df = pd.DataFrame()       
-        if scale_type == 1:
+        if scale_type == 1:  # mirror order books
             # option #1:  map scaled cex trades to BTS dex        
             mirror_asks, mirror_bids = get_cex_mirror(cex_ask_df, cex_bid_df, ask_bal, bid_bal)
             combo_df = scaled_mirror(mirror_asks, mirror_bids, bts_df)
-        elif scale_type == 2:
+        elif scale_type == 2: # exact order books
             # option #2: exact mirror, no scaling
-            combo_df = exact_ob_grp(cex_ask_df, cex_bid_df, bts_df)
-            opp_df = calc_arb_opp(combo_df)
+            cex_df, bts_df = exact_ob_grp(cex_ask_df, cex_bid_df, bts_df)
+
+            trade_info = calc_arb_opp(cex_df, bts_df)
+            if not trade_info:
+                print(" make trade, data is not empty")
+
+#            ct_symbol = cex_symbol.replace('/', '').lower()
+#            side_type = 'buy'  #buy on cex, sell on dex
+#            order_id, code_resp = ct_place_order(api_key, bid_price, vol, ct_symbol, side_type)
+
             #opp_ascii = format_df_ascii(opp_df)
             #dynamic_ascii_plot(opp_ascii, opp_df_title)
             
