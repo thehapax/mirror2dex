@@ -11,3 +11,5 @@ graphenelib==1.1.18
 bitshares==0.3.2
 uptick==0.2.4
 keyring==19.2.0
+npyscreen==4.10.5
+
