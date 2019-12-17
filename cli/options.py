@@ -4,7 +4,7 @@
 # The system here is an experimental one. See documentation for details.
 import npyscreen
 
-DEFAULT_CONFIG_FILE  = 'tmp/test'
+DEFAULT_CONFIG_FILE  = '/tmp/config.yml'
 
 class TestApp(npyscreen.NPSApp):
 
@@ -29,7 +29,7 @@ class TestApp(npyscreen.NPSApp):
         options.append(npyscreen.OptionMultiFreeList('Multiline List'))
         
         try:
-            Options.reload_from_file('/tmp/test')
+            Options.reload_from_file(self.default_file)
         except FileNotFoundError:
             pass        
         
