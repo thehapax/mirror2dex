@@ -2,6 +2,7 @@ from bts_spread_mapper import setup_bitshares_market, get_bts_ob_data
 from ccxt_helper import get_ccxt_module, get_cex_data
 from ascii_plot_helper import dynamic_ascii_plot, format_df_ascii
 from arb_helper import get_cex_mirror
+from timeit import timeit
 
 import pandas as pd
 import time, os
@@ -12,6 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s'
 )
+
 
 ### for matlab gui plot only
 #invert = False
@@ -35,7 +37,7 @@ opp_df_title = "Arb opportunity Dataframe"
 # type 1 is scaled mirror, type 2 is exact mirror
 scale_type = 2
 
-
+@timeit
 def scaled_ob_grp(m_df, bts_df):
     """
     combine order book from m_df (cec) and bts_df
@@ -52,7 +54,7 @@ def scaled_ob_grp(m_df, bts_df):
     # dynamic_ascii_plot(new_bts_ascii, cex_dex_title)
     return new_bts
     
-
+@timeit
 def scaled_mirror(mirror_asks, mirror_bids, bts_df):
     """
     Scaled the trades from the cex orderbook to the dex
@@ -83,6 +85,7 @@ def scaled_mirror(mirror_asks, mirror_bids, bts_df):
         return new_bts_combo
 
 
+@timeit
 def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     """
     mirror order books as is - no modifications between cex and dex
@@ -103,6 +106,7 @@ def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     return new_bts, bts_df
     
 
+@timeit
 def calc_arb_opp(cex_df, bts_df):
     # todo - change arguments to be 2 separate dfs, mirror_df and dex_df
     """
@@ -234,8 +238,11 @@ if __name__ == '__main__':
             cex_df, bts_df = exact_ob_grp(cex_ask_df, cex_bid_df, bts_df)
 
             trade_info = calc_arb_opp(cex_df, bts_df)
-            if not trade_info:
+            if trade_info:
                 print(" make trade, data is not empty")
+                print(trade_info)
+            elif not trade_info:
+                print("no trade available.")
 
 #            ct_symbol = cex_symbol.replace('/', '').lower()
 #            side_type = 'buy'  #buy on cex, sell on dex
