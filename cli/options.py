@@ -6,7 +6,7 @@ import npyscreen
 
 DEFAULT_CONFIG_FILE  = '/tmp/config.yml'
 
-class TestApp(npyscreen.NPSApp):
+class TestApp(npyscreen.NPSAppManaged):
 
     def __init__(self, config=None):
         super().__init__()
@@ -20,10 +20,10 @@ class TestApp(npyscreen.NPSApp):
         
         # just for convenience so we don't have to keep writing Options.options
         options = Options.options
-        
+        options.append(npyscreen.OptionFilename('Filename', self.default_file))
+               
         options.append(npyscreen.OptionFreeText('FreeText', value='', documentation="This is some documentation."))
         options.append(npyscreen.OptionMultiChoice('Multichoice', choices=['Choice 1', 'Choice 2', 'Choice 3']))
-        options.append(npyscreen.OptionFilename('Filename', self.default_file))
         options.append(npyscreen.OptionDate('Date', ))
         options.append(npyscreen.OptionMultiFreeText('Multiline Text', value=''))
         options.append(npyscreen.OptionMultiFreeList('Multiline List'))
