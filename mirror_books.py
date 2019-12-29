@@ -89,9 +89,9 @@ def scaled_mirror(mirror_asks, mirror_bids, bts_df):
 def exact_ob_grp(cex_ask_df, cex_bid_df, bts_df):
     """
     mirror order books as is - no modifications between cex and dex
-    :param cex_ask_df:
-    :param cex_bid_Df:
-    :param bts_df:
+    :param cex_ask_df: cex ask dataframe
+    :param cex_bid_Df: cex bid dataframe
+    :param bts_df: bts dataframe (both asks and bids)
     :return:
     """
     # Option #2 concatenate order books (cex and dex) 
